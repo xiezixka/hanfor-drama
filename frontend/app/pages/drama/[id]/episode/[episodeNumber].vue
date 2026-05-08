@@ -1,5 +1,5 @@
 <template>
-  <div class="studio" v-if="drama">
+  <div class="studio" v-if="drama" :class="{ 'is-production': panel === 'production' }">
     <header class="studio-topbar">
       <div class="studio-topbar-main">
         <button class="back-btn topbar-back" @click="navigateTo(`/drama/${dramaId}`)">
@@ -737,6 +737,45 @@
             </div>
           </div>
 
+          <div class="task-center">
+            <div class="task-center-head">
+              <div class="task-center-title">任务中心</div>
+              <div class="task-center-meta">
+                <span class="tag tag-success">{{ taskCenterReadyCount }}/{{ taskCenterTotalCount }} 就绪</span>
+                <span v-if="taskCenterBusyCount" class="tag">{{ taskCenterBusyCount }} 项处理中</span>
+                <span v-if="taskCenterIssueCount" class="tag task-tag-warn">{{ taskCenterIssueCount }} 项需处理</span>
+              </div>
+            </div>
+            <div class="task-center-grid">
+              <button
+                v-for="task in taskCenterItems"
+                :key="task.id"
+                type="button"
+                :class="['task-card', `is-${task.variant}`]"
+                @click="goTaskCenterItem(task)"
+              >
+                <span class="task-icon">
+                  <component :is="task.icon" :size="14" />
+                </span>
+                <span class="task-main">
+                  <span class="task-row">
+                    <span class="task-name">{{ task.label }}</span>
+                    <span class="task-state">{{ task.state }}</span>
+                  </span>
+                  <span class="task-progress">
+                    <span class="task-progress-fill" :style="{ width: task.progress + '%' }"></span>
+                  </span>
+                  <span class="task-foot">
+                    <span>{{ task.done }}/{{ task.total || 0 }}</span>
+                    <span v-if="task.processing">{{ task.processing }} 生成中</span>
+                    <span v-else-if="task.failed">{{ task.failed }} 失败</span>
+                    <span v-else>{{ task.detail }}</span>
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+
           <!-- Sub: Characters -->
           <div v-if="prodTab === 'chars'" class="prod-content">
             <div class="prod-section-bar">
@@ -748,6 +787,19 @@
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   批量生成
                 </button>
+              </div>
+            </div>
+            <div class="card consistency-overview">
+              <div class="consistency-overview-icon">
+                <Users :size="15" />
+              </div>
+              <div class="consistency-overview-copy">
+                <div class="consistency-overview-title">角色一致性中心</div>
+                <div class="consistency-overview-desc">主形象和参考图组会自动用于绑定该角色的镜头图片，保持人物脸型、发型、服装和体型稳定。</div>
+              </div>
+              <div class="consistency-overview-stats">
+                <span class="tag tag-success">{{ consistencyReadyCount }}/{{ visualCharTotal }} 主形象</span>
+                <span class="tag">{{ consistencyRefCount }} 张参考图</span>
               </div>
             </div>
             <div class="asset-grid">
@@ -768,10 +820,50 @@
                   <div class="asset-name">{{ c.name }}</div>
                   <div class="asset-meta dim">{{ c.role || '角色' }}</div>
                 </div>
+                <div class="consistency-panel">
+                  <div class="consistency-head">
+                    <span>一致性参考</span>
+                    <span class="tag">{{ characterShotUsageCount(c.id) }} 个镜头</span>
+                  </div>
+                  <div class="consistency-signature">{{ getCharacterSignature(c) }}</div>
+                  <div v-if="getCharacterMainImage(c) || getCharacterReferenceImages(c).length" class="consistency-strip">
+                    <div v-if="getCharacterMainImage(c)" class="consistency-thumb is-main">
+                      <img
+                        :src="'/' + getCharacterMainImage(c)"
+                        class="previewable-image"
+                        @click.stop="openImageViewer('/' + getCharacterMainImage(c), `${c.name} 主形象`)"
+                      />
+                      <span class="consistency-thumb-label">主图</span>
+                    </div>
+                    <div v-for="ref in getCharacterReferenceImages(c)" :key="ref" class="consistency-thumb">
+                      <img
+                        :src="'/' + ref"
+                        class="previewable-image"
+                        @click.stop="openImageViewer('/' + ref, `${c.name} 参考图`)"
+                      />
+                      <div class="consistency-thumb-actions">
+                        <button type="button" title="设为主形象" @click.stop="setReferenceAsCharacterMain(c, ref)">主</button>
+                        <button type="button" title="移除参考图" @click.stop="removeCharacterReferenceImage(c, ref)">×</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="consistency-empty">先上传主形象或参考图，后续镜头会更稳。</div>
+                  <div class="consistency-actions">
+                    <button class="btn btn-sm" :disabled="isUploadingAsset('character-reference', c.id)" @click="startAssetUpload('character-reference', c.id)">
+                      <Upload :size="11" /> {{ isUploadingAsset('character-reference', c.id) ? '上传中' : '上传参考图' }}
+                    </button>
+                    <button v-if="getCharacterMainImage(c)" class="btn btn-sm" @click="addMainToCharacterRefs(c)">主图加入参考</button>
+                  </div>
+                </div>
                 <div class="asset-foot">
                   <span :class="['dot', (c.image_url || c.imageUrl) && 'ok', isPendingCharImage(c.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '已生成' : (isPendingCharImage(c.id) ? '生成中' : '待生成') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '生成中' : '生成' }}</button>
+                  <div class="asset-actions ml-auto">
+                    <button class="btn btn-sm" :disabled="isUploadingAsset('character', c.id)" @click="startAssetUpload('character', c.id)">
+                      <Upload :size="11" /> {{ isUploadingAsset('character', c.id) ? '上传中' : '上传' }}
+                    </button>
+                    <button class="btn btn-sm" :disabled="isPendingCharImage(c.id) || isUploadingAsset('character', c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '生成中' : '生成' }}</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -782,11 +874,25 @@
             <div class="prod-section-bar">
               <span class="dim" style="font-size:12px">{{ scenes.length }} 个场景</span>
               <span class="tag">{{ lockedImageConfigLabel }}</span>
+              <span class="tag">{{ sceneConsistencyRefCount }} 张参考图</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchSceneImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   批量生成
                 </button>
+              </div>
+            </div>
+            <div class="card consistency-overview">
+              <div class="consistency-overview-icon scene">
+                <MapPin :size="15" />
+              </div>
+              <div class="consistency-overview-copy">
+                <div class="consistency-overview-title">场景一致性设置</div>
+                <div class="consistency-overview-desc">主场景和参考图组会自动用于绑定该场景的镜头图片，保持空间、背景、灯光和风格稳定。</div>
+              </div>
+              <div class="consistency-overview-stats">
+                <span class="tag tag-success">{{ sceneConsistencyReadyCount }}/{{ scenes.length }} 主场景</span>
+                <span class="tag">{{ sceneConsistencyRefCount }} 张参考图</span>
               </div>
             </div>
             <div class="asset-grid">
@@ -807,10 +913,50 @@
                   <div class="asset-name">{{ s.location }}</div>
                   <div class="asset-meta dim">{{ s.time || '—' }}</div>
                 </div>
+                <div class="consistency-panel scene-consistency-panel">
+                  <div class="consistency-head">
+                    <span>一致性参考</span>
+                    <span class="tag">{{ sceneShotUsageCount(s.id) }} 个镜头</span>
+                  </div>
+                  <div class="consistency-signature">{{ getSceneSignature(s) }}</div>
+                  <div v-if="getSceneMainImage(s) || getSceneReferenceImages(s).length" class="consistency-strip">
+                    <div v-if="getSceneMainImage(s)" class="consistency-thumb is-main wide">
+                      <img
+                        :src="'/' + getSceneMainImage(s)"
+                        class="previewable-image"
+                        @click.stop="openImageViewer('/' + getSceneMainImage(s), `${s.location} 主场景`)"
+                      />
+                      <span class="consistency-thumb-label">主图</span>
+                    </div>
+                    <div v-for="ref in getSceneReferenceImages(s)" :key="ref" class="consistency-thumb wide">
+                      <img
+                        :src="'/' + ref"
+                        class="previewable-image"
+                        @click.stop="openImageViewer('/' + ref, `${s.location} 参考图`)"
+                      />
+                      <div class="consistency-thumb-actions">
+                        <button type="button" title="设为主场景" @click.stop="setReferenceAsSceneMain(s, ref)">主</button>
+                        <button type="button" title="移除参考图" @click.stop="removeSceneReferenceImage(s, ref)">×</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="consistency-empty">先上传主场景或参考图，后续镜头会更稳。</div>
+                  <div class="consistency-actions">
+                    <button class="btn btn-sm" :disabled="isUploadingAsset('scene-reference', s.id)" @click="startAssetUpload('scene-reference', s.id)">
+                      <Upload :size="11" /> {{ isUploadingAsset('scene-reference', s.id) ? '上传中' : '上传参考图' }}
+                    </button>
+                    <button v-if="getSceneMainImage(s)" class="btn btn-sm" @click="addMainToSceneRefs(s)">主图加入参考</button>
+                  </div>
+                </div>
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '已生成' : (isPendingSceneImage(s.id) ? '生成中' : '待生成') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '生成中' : '生成' }}</button>
+                  <div class="asset-actions ml-auto">
+                    <button class="btn btn-sm" :disabled="isUploadingAsset('scene', s.id)" @click="startAssetUpload('scene', s.id)">
+                      <Upload :size="11" /> {{ isUploadingAsset('scene', s.id) ? '上传中' : '上传' }}
+                    </button>
+                    <button class="btn btn-sm" :disabled="isPendingSceneImage(s.id) || isUploadingAsset('scene', s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '生成中' : '生成' }}</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1417,6 +1563,8 @@
         </button>
       </div>
 
+      <input ref="assetUploadInput" class="sr-only" type="file" accept="image/*" @change="handleAssetUploadChange" />
+
       <div v-if="imageViewer.open && imageViewer.src" class="overlay image-viewer-overlay" @click.self="closeImageViewer">
         <div class="card image-viewer-dialog">
           <div class="image-viewer-head">
@@ -1438,9 +1586,9 @@
 <script setup>
 import { toast } from 'vue-sonner'
 import {
-  Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download,
+  Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download, Upload,
 } from 'lucide-vue-next'
-import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI } from '~/composables/useApi'
+import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, uploadAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI } from '~/composables/useApi'
 import { useAgent } from '~/composables/useAgent'
 import BaseSelect from '~/components/BaseSelect.vue'
 
@@ -1505,6 +1653,9 @@ const pendingVideoIds = ref([])
 const pendingComposeIds = ref([])
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
+const assetUploadInput = ref(null)
+const assetUploadTarget = ref(null)
+const uploadingAssetKey = ref('')
 const imageViewer = ref({ open: false, src: '', title: '' })
 
 function configLabel(config) {
@@ -1541,6 +1692,65 @@ onBeforeUnmount(() => {
 
 function isPendingSceneImage(id) {
   return pendingSceneImageIds.value.includes(id)
+}
+
+function assetKey(type, id) {
+  return `${type}:${id}`
+}
+
+function isUploadingAsset(type, id) {
+  return uploadingAssetKey.value === assetKey(type, id)
+}
+
+function startAssetUpload(type, id) {
+  assetUploadTarget.value = { type, id }
+  if (assetUploadInput.value) {
+    assetUploadInput.value.value = ''
+    assetUploadInput.value.click()
+  }
+}
+
+async function handleAssetUploadChange(event) {
+  const file = event.target.files?.[0]
+  const target = assetUploadTarget.value
+  if (!file || !target) return
+  if (!file.type.startsWith('image/')) {
+    toast.warning('请选择图片文件')
+    return
+  }
+
+  const key = assetKey(target.type, target.id)
+  uploadingAssetKey.value = key
+  try {
+    const uploaded = await uploadAPI.image(file)
+    const imagePath = uploaded.path || String(uploaded.url || '').replace(/^\/+/, '')
+    if (!imagePath) throw new Error('上传成功，但没有返回图片路径')
+
+    if (target.type === 'character') {
+      await characterAPI.update(target.id, { image_url: imagePath, local_path: imagePath })
+      pendingCharImageIds.value = pendingCharImageIds.value.filter(id => id !== target.id)
+      const char = chars.value.find(c => c.id === target.id)
+      if (char) Object.assign(char, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath })
+      toast.success('角色形象已上传')
+    } else if (target.type === 'character-reference') {
+      await addCharacterReferenceImage(target.id, imagePath)
+    } else if (target.type === 'scene-reference') {
+      await addSceneReferenceImage(target.id, imagePath)
+    } else {
+      await sceneAPI.update(target.id, { image_url: imagePath, local_path: imagePath, status: 'completed' })
+      pendingSceneImageIds.value = pendingSceneImageIds.value.filter(id => id !== target.id)
+      const scene = scenes.value.find(s => s.id === target.id)
+      if (scene) Object.assign(scene, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath, status: 'completed' })
+      toast.success('场景图片已上传')
+    }
+    await refresh()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    uploadingAssetKey.value = ''
+    assetUploadTarget.value = null
+    if (event.target) event.target.value = ''
+  }
 }
 
 function framePendingKey(id, frameType) {
@@ -2079,6 +2289,120 @@ const ttsGeneratedCount = computed(() => sbs.value.filter(s => hasDialogue(s) &&
 const shotImgCount = computed(() => sbs.value.filter(s => s.first_frame_image || s.firstFrameImage || s.last_frame_image || s.lastFrameImage || s.composed_image || s.composedImage).length)
 const shotVidCount = computed(() => sbs.value.filter(s => s.video_url || s.videoUrl).length)
 const visualCharTotal = computed(() => visualChars.value.length)
+const consistencyReadyCount = computed(() => visualChars.value.filter(c => getCharacterMainImage(c)).length)
+const consistencyRefCount = computed(() => visualChars.value.reduce((sum, c) => sum + getCharacterReferenceImages(c).length, 0))
+const sceneConsistencyReadyCount = computed(() => scenes.value.filter(s => getSceneMainImage(s)).length)
+const sceneConsistencyRefCount = computed(() => scenes.value.reduce((sum, s) => sum + getSceneReferenceImages(s).length, 0))
+const sceneProcessingCount = computed(() => {
+  const ids = new Set(pendingSceneImageIds.value)
+  scenes.value
+    .filter(s => String(s.status || '').toLowerCase() === 'processing')
+    .forEach(s => ids.add(s.id))
+  return ids.size
+})
+const sceneFailedCount = computed(() => scenes.value.filter(s => String(s.status || '').toLowerCase() === 'failed').length)
+const videoFailedCount = computed(() => Object.keys(failedVideoMessages.value || {}).length)
+const composeFailedCount = computed(() => Object.keys(failedComposeMessages.value || {}).length)
+
+function buildTaskCenterItem({ id, label, icon, done, total, processing = 0, failed = 0, detail = '', target }) {
+  const safeTotal = Number(total || 0)
+  const safeDone = Math.min(Number(done || 0), safeTotal || Number(done || 0))
+  const progress = safeTotal ? Math.round((safeDone / safeTotal) * 100) : 100
+  let state = '待处理'
+  let variant = 'todo'
+  if (!safeTotal) {
+    state = '无任务'
+    variant = 'empty'
+  } else if (failed) {
+    state = '需处理'
+    variant = 'issue'
+  } else if (processing) {
+    state = '生成中'
+    variant = 'busy'
+  } else if (safeDone >= safeTotal) {
+    state = '完成'
+    variant = 'done'
+  } else if (safeDone > 0) {
+    state = '部分完成'
+    variant = 'partial'
+  }
+
+  return { id, label, icon, done: safeDone, total: safeTotal, processing, failed, detail, target, progress, state, variant }
+}
+
+const taskCenterItems = computed(() => [
+  buildTaskCenterItem({
+    id: 'chars',
+    label: '角色形象',
+    icon: Users,
+    done: charImgCount.value,
+    total: visualCharTotal.value,
+    processing: pendingCharImageIds.value.length,
+    detail: `${consistencyRefCount.value} 张角色参考图`,
+    target: 'chars',
+  }),
+  buildTaskCenterItem({
+    id: 'scenes',
+    label: '场景图片',
+    icon: MapPin,
+    done: sceneImgCount.value,
+    total: scenes.value.length,
+    processing: sceneProcessingCount.value,
+    failed: sceneFailedCount.value,
+    detail: `${sceneConsistencyRefCount.value} 张场景参考图`,
+    target: 'scenes',
+  }),
+  buildTaskCenterItem({
+    id: 'dubbing',
+    label: '配音生成',
+    icon: Mic2,
+    done: ttsGeneratedCount.value,
+    total: ttsEligibleCount.value,
+    detail: ttsEligibleCount.value ? '对白与旁白' : '无对白',
+    target: 'dubbing',
+  }),
+  buildTaskCenterItem({
+    id: 'shots',
+    label: '镜头图片',
+    icon: ImageIcon,
+    done: shotImgCount.value,
+    total: sbs.value.length,
+    processing: pendingShotFrameKeys.value.length,
+    detail: `${Math.max(0, sbs.value.length - shotImgCount.value)} 个待处理`,
+    target: 'shots',
+  }),
+  buildTaskCenterItem({
+    id: 'videos',
+    label: '视频生成',
+    icon: Video,
+    done: shotVidCount.value,
+    total: sbs.value.length,
+    processing: pendingVideoIds.value.length,
+    failed: videoFailedCount.value,
+    detail: `${Math.max(0, sbs.value.length - shotVidCount.value)} 个待生成`,
+    target: 'videos',
+  }),
+  buildTaskCenterItem({
+    id: 'compose',
+    label: '视频合成',
+    icon: Layers,
+    done: composedCount.value,
+    total: sbs.value.length,
+    processing: pendingComposeIds.value.length,
+    failed: composeFailedCount.value,
+    detail: `${Math.max(0, sbs.value.length - composedCount.value)} 个待合成`,
+    target: 'compose',
+  }),
+])
+const taskCenterTotalCount = computed(() => taskCenterItems.value.length)
+const taskCenterReadyCount = computed(() => taskCenterItems.value.filter(task => task.variant === 'done' || task.variant === 'empty').length)
+const taskCenterBusyCount = computed(() => taskCenterItems.value.filter(task => task.variant === 'busy').length)
+const taskCenterIssueCount = computed(() => taskCenterItems.value.filter(task => ['todo', 'partial', 'issue'].includes(task.variant)).length)
+
+function goTaskCenterItem(task) {
+  panel.value = 'production'
+  prodTab.value = task.target || task.id
+}
 
 const prodTabDefs = computed(() => [
   { id: 'chars', label: '角色形象', icon: Users, badge: visualCharTotal.value ? `${charImgCount.value}/${visualCharTotal.value}` : '' },
@@ -2624,10 +2948,20 @@ function getShotReferenceImages(sb) {
   }
   const sceneId = sb?.scene_id || sb?.sceneId
   const scene = scenes.value.find(item => item.id === sceneId)
-  pushRef(scene?.image_url || scene?.imageUrl)
-  for (const charId of getStoryboardCharacterIds(sb)) {
-    const char = chars.value.find(item => item.id === charId)
-    pushRef(char?.image_url || char?.imageUrl)
+  const boundChars = getStoryboardCharacterIds(sb)
+    .map(charId => chars.value.find(item => item.id === charId))
+    .filter(Boolean)
+  pushRef(getSceneMainImage(scene))
+  for (const char of boundChars) {
+    pushRef(getCharacterMainImage(char))
+  }
+  for (const ref of getSceneReferenceImages(scene)) {
+    pushRef(ref)
+  }
+  for (const char of boundChars) {
+    for (const ref of getCharacterReferenceImages(char)) {
+      pushRef(ref)
+    }
   }
   for (const ref of getRefs(sb)) {
     pushRef(ref)
@@ -2648,6 +2982,8 @@ function buildShotImagePrompt(sb, frameType) {
   const location = sb.location || getSceneName(sb)
   const time = sb.time || ''
   const charactersText = getStoryboardCharacterNames(sb).join('、')
+  const consistencyHint = buildCharacterConsistencyPrompt(sb)
+  const sceneConsistencyHint = buildSceneConsistencyPrompt(sb)
   const action = sb.action || ''
   const atmosphere = sb.atmosphere || ''
   const frameHint = frameType === 'first_frame'
@@ -2661,12 +2997,32 @@ function buildShotImagePrompt(sb, frameType) {
     angle ? `机位：${angle}` : '',
     movement ? `运镜：${movement}` : '',
     charactersText ? `角色：${charactersText}` : '',
+    consistencyHint,
+    sceneConsistencyHint,
     location ? `地点：${location}` : '',
     time ? `时间：${time}` : '',
     action ? `动作：${action}` : '',
     atmosphere ? `氛围：${atmosphere}` : '',
     frameHint,
   ].filter(Boolean).join('；')
+}
+
+function buildCharacterConsistencyPrompt(sb) {
+  const storyboardChars = getStoryboardCharacterIds(sb)
+    .map(id => chars.value.find(item => item.id === id))
+    .filter(Boolean)
+  if (!storyboardChars.length) return ''
+  const names = storyboardChars.map(c => c.name).filter(Boolean).join('、')
+  return `角色一致性：严格参考绑定角色${names ? `（${names}）` : ''}的主形象和参考图组，保持脸型、发型、服装、体型、年龄感一致，不要重塑角色身份`
+}
+
+function buildSceneConsistencyPrompt(sb) {
+  const sceneId = sb?.scene_id || sb?.sceneId
+  if (!sceneId) return ''
+  const scene = scenes.value.find(item => item.id === sceneId)
+  if (!scene) return ''
+  const name = [scene.location, scene.time].filter(Boolean).join(' · ')
+  return `场景一致性：严格参考绑定场景${name ? `（${name}）` : ''}的主场景和参考图组，保持空间布局、背景元素、灯光、色调和品牌环境稳定`
 }
 
 async function genShotFrame(sb, frameType) {
@@ -2842,6 +3198,142 @@ function getRefs(sb) {
   const raw = sb.reference_images || sb.referenceImages
   if (!raw) return []
   try { return JSON.parse(raw) } catch { return [] }
+}
+
+function getCharacterMainImage(char) {
+  return char?.image_url || char?.imageUrl || ''
+}
+
+function parseReferenceList(raw) {
+  if (!raw) return []
+  if (Array.isArray(raw)) return uniqueImagePaths(raw)
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? uniqueImagePaths(parsed) : []
+    } catch {
+      return uniqueImagePaths(raw.split(','))
+    }
+  }
+  return []
+}
+
+function uniqueImagePaths(items) {
+  return Array.from(new Set((items || []).map(item => String(item || '').trim()).filter(Boolean)))
+}
+
+function getCharacterReferenceImages(char) {
+  return parseReferenceList(char?.reference_images || char?.referenceImages)
+}
+
+function setLocalCharacterReferenceImages(char, refs) {
+  const serialized = JSON.stringify(uniqueImagePaths(refs).slice(0, 12))
+  Object.assign(char, { reference_images: serialized, referenceImages: serialized })
+}
+
+async function updateCharacterReferenceImages(char, refs, message = '参考图已更新') {
+  const nextRefs = uniqueImagePaths(refs).slice(0, 12)
+  await characterAPI.update(char.id, { reference_images: nextRefs })
+  setLocalCharacterReferenceImages(char, nextRefs)
+  toast.success(message)
+}
+
+async function addCharacterReferenceImage(charId, imagePath) {
+  const char = chars.value.find(c => c.id === charId)
+  if (!char) return
+  await updateCharacterReferenceImages(char, [...getCharacterReferenceImages(char), imagePath], '参考图已上传')
+}
+
+async function addMainToCharacterRefs(char) {
+  const main = getCharacterMainImage(char)
+  if (!main) return
+  const refs = getCharacterReferenceImages(char)
+  if (refs.includes(main)) {
+    toast.info('主图已经在参考图组里')
+    return
+  }
+  await updateCharacterReferenceImages(char, [...refs, main], '主图已加入参考图组')
+}
+
+async function removeCharacterReferenceImage(char, imagePath) {
+  await updateCharacterReferenceImages(
+    char,
+    getCharacterReferenceImages(char).filter(item => item !== imagePath),
+    '参考图已移除',
+  )
+}
+
+async function setReferenceAsCharacterMain(char, imagePath) {
+  await characterAPI.update(char.id, { image_url: imagePath, local_path: imagePath })
+  Object.assign(char, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath })
+  toast.success('已设为主形象')
+}
+
+function getSceneMainImage(scene) {
+  return scene?.image_url || scene?.imageUrl || ''
+}
+
+function getSceneReferenceImages(scene) {
+  return parseReferenceList(scene?.reference_images || scene?.referenceImages)
+}
+
+function setLocalSceneReferenceImages(scene, refs) {
+  const serialized = JSON.stringify(uniqueImagePaths(refs).slice(0, 12))
+  Object.assign(scene, { reference_images: serialized, referenceImages: serialized })
+}
+
+async function updateSceneReferenceImages(scene, refs, message = '场景参考图已更新') {
+  const nextRefs = uniqueImagePaths(refs).slice(0, 12)
+  await sceneAPI.update(scene.id, { reference_images: nextRefs })
+  setLocalSceneReferenceImages(scene, nextRefs)
+  toast.success(message)
+}
+
+async function addSceneReferenceImage(sceneId, imagePath) {
+  const scene = scenes.value.find(s => s.id === sceneId)
+  if (!scene) return
+  await updateSceneReferenceImages(scene, [...getSceneReferenceImages(scene), imagePath], '场景参考图已上传')
+}
+
+async function addMainToSceneRefs(scene) {
+  const main = getSceneMainImage(scene)
+  if (!main) return
+  const refs = getSceneReferenceImages(scene)
+  if (refs.includes(main)) {
+    toast.info('主场景已经在参考图组里')
+    return
+  }
+  await updateSceneReferenceImages(scene, [...refs, main], '主场景已加入参考图组')
+}
+
+async function removeSceneReferenceImage(scene, imagePath) {
+  await updateSceneReferenceImages(
+    scene,
+    getSceneReferenceImages(scene).filter(item => item !== imagePath),
+    '场景参考图已移除',
+  )
+}
+
+async function setReferenceAsSceneMain(scene, imagePath) {
+  await sceneAPI.update(scene.id, { image_url: imagePath, local_path: imagePath, status: 'completed' })
+  Object.assign(scene, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath, status: 'completed' })
+  toast.success('已设为主场景')
+}
+
+function getCharacterSignature(char) {
+  return char?.appearance || char?.description || char?.personality || '建议补充脸型、发型、服装、体型等稳定特征'
+}
+
+function characterShotUsageCount(charId) {
+  return sbs.value.filter(sb => getStoryboardCharacterIds(sb).includes(charId)).length
+}
+
+function getSceneSignature(scene) {
+  return scene?.prompt || `${scene?.location || '未命名场景'}${scene?.time ? ` · ${scene.time}` : ''}`
+}
+
+function sceneShotUsageCount(sceneId) {
+  return sbs.value.filter(sb => (sb.scene_id || sb.sceneId) === sceneId).length
 }
 
 async function loadConfigs() {
@@ -3611,6 +4103,124 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 .prod-content { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .prod-section-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+.task-center {
+  margin: 10px 16px 0;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(27, 41, 64, 0.08);
+  box-shadow: 0 10px 24px rgba(20, 32, 54, 0.05);
+}
+.task-center-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.task-center-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-0);
+  font-family: var(--font-display);
+}
+.task-center-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.task-tag-warn { background: rgba(209, 131, 31, 0.12); color: #9a5f12; }
+.task-center-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.task-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(27, 41, 64, 0.08);
+  background: rgba(248,251,255,0.7);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-out), border-color 0.15s var(--ease-out), background 0.15s var(--ease-out);
+}
+.task-card:hover { transform: translateY(-1px); border-color: rgba(76, 125, 255, 0.26); background: rgba(255,255,255,0.9); }
+.task-card.is-done { background: rgba(238, 249, 242, 0.8); }
+.task-card.is-busy { background: rgba(239, 246, 255, 0.86); }
+.task-card.is-issue { background: rgba(255, 247, 235, 0.9); border-color: rgba(209, 131, 31, 0.18); }
+.task-card.is-empty { opacity: 0.68; }
+.task-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: rgba(76, 125, 255, 0.1);
+}
+.task-main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 7px; }
+.task-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.task-name { font-size: 12px; font-weight: 800; color: var(--text-0); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-state { font-size: 10px; color: var(--text-3); white-space: nowrap; }
+.task-progress {
+  position: relative;
+  height: 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(27, 41, 64, 0.08);
+}
+.task-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #557ff4, #2f8f66);
+}
+.task-card.is-issue .task-progress-fill { background: #d1831f; }
+.task-card.is-busy .task-progress-fill { background: #557ff4; }
+.task-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-3);
+  line-height: 1.3;
+}
+.task-foot span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.consistency-overview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.82), rgba(239,246,255,0.66));
+}
+.consistency-overview-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: rgba(76, 125, 255, 0.12);
+  border: 1px solid rgba(76, 125, 255, 0.16);
+}
+.consistency-overview-icon.scene {
+  color: #2f7a88;
+  background: rgba(47, 122, 136, 0.1);
+  border-color: rgba(47, 122, 136, 0.16);
+}
+.consistency-overview-copy { flex: 1; min-width: 0; }
+.consistency-overview-title { font-size: 14px; font-weight: 800; color: var(--text-0); font-family: var(--font-display); }
+.consistency-overview-desc { margin-top: 3px; font-size: 12px; line-height: 1.55; color: var(--text-2); }
+.consistency-overview-stats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
 .dub-grid { display: flex; flex-direction: column; gap: 10px; }
 .dub-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; border-radius: 20px; background: linear-gradient(180deg, rgba(255,255,255,0.74), rgba(248,251,255,0.58)); }
 .dub-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
@@ -3656,7 +4266,97 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 .asset-body { padding: 8px 10px; }
 .asset-name { font-size: 13px; font-weight: 600; }
 .asset-meta { font-size: 11px; }
+.consistency-panel {
+  margin: 0 10px 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(248, 251, 255, 0.76);
+  border: 1px solid rgba(27, 41, 64, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.consistency-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-0); }
+.consistency-signature {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.consistency-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.consistency-thumb {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-2);
+  border: 1px solid rgba(27, 41, 64, 0.12);
+}
+.consistency-thumb.wide {
+  width: 82px;
+  flex-basis: 82px;
+}
+.consistency-thumb.is-main { border-color: rgba(36, 125, 72, 0.42); box-shadow: 0 0 0 2px rgba(36, 125, 72, 0.09); }
+.consistency-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.consistency-thumb-label {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(36, 125, 72, 0.92);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+.consistency-thumb-actions {
+  position: absolute;
+  inset: auto 3px 3px 3px;
+  display: none;
+  gap: 3px;
+}
+.consistency-thumb:hover .consistency-thumb-actions { display: flex; }
+.consistency-thumb-actions button {
+  flex: 1;
+  height: 18px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(7, 11, 21, 0.68);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.consistency-empty {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px dashed rgba(27, 41, 64, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 11px;
+  text-align: center;
+  padding: 0 8px;
+}
+.consistency-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.consistency-actions .btn-sm { min-width: 0; padding-inline: 8px; }
 .asset-foot { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-top: 1px solid var(--border); }
+.asset-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.asset-actions .btn-sm {
+  min-width: 48px;
+  padding-inline: 8px;
+}
 
 /* Frame grid */
 .frame-grid { display: flex; flex-direction: column; gap: 8px; }
@@ -4173,6 +4873,10 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
     max-height: 340px;
   }
 
+  .studio.is-production .sidebar {
+    display: none;
+  }
+
   .shot-list,
   .export-list {
     width: 100%;
@@ -4184,6 +4888,10 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 
   .field-grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .task-center-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .image-viewer-overlay {
@@ -4242,6 +4950,14 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
   .step-bubble,
   .export-bar {
     flex-wrap: wrap;
+  }
+
+  .task-center {
+    margin-inline: 12px;
+  }
+
+  .task-center-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .extract-grid,

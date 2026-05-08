@@ -26,11 +26,12 @@ function cellLabel(i: number, rows: number, cols: number) {
 
 function safeParseJsonArray(value: any): string[] {
   if (!value) return []
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean)
   try {
     const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+    return Array.isArray(parsed) ? parsed.map(item => String(item || '').trim()).filter(Boolean) : []
   } catch {
-    return []
+    return String(value).split(',').map(item => item.trim()).filter(Boolean)
   }
 }
 
@@ -90,9 +91,15 @@ function collectGridReferenceAssets(storyboards: any[]) {
   }
   for (const scene of scenes) {
     pushAsset(scene.imageUrl, `${scene.location}${scene.time ? `（${scene.time}）` : ''}场景`, 'scene', { sceneId: scene.id })
+    for (const ref of safeParseJsonArray(scene.referenceImages)) {
+      pushAsset(ref, `${scene.location}${scene.time ? `（${scene.time}）` : ''}场景参考`, 'scene', { sceneId: scene.id })
+    }
   }
   for (const char of characters) {
     pushAsset(char.imageUrl, `${char.name}角色`, 'character', { characterId: char.id })
+    for (const ref of safeParseJsonArray(char.referenceImages)) {
+      pushAsset(ref, `${char.name}角色参考`, 'character', { characterId: char.id })
+    }
   }
 
   return assets.map((asset, index) => ({

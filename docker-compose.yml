@@ -5,7 +5,7 @@ services:
       - "5679:5679"
     volumes:
       - ./data:/app/data
-      - ./configs/config.yaml:/app/configs/config.yaml
+      - ./configs:/app/configs
     environment:
       - NODE_ENV=production
       - PORT=5679

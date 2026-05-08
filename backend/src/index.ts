@@ -25,7 +25,9 @@ import aiVoices from './routes/aiVoices.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const projectRoot = path.resolve(__dirname, '../..')
+const projectRoot = process.env.APP_ROOT || path.resolve(__dirname, '../..')
+const dataRoot = process.env.DATA_PATH || path.join(projectRoot, 'data')
+const distPath = process.env.FRONTEND_DIST || path.join(projectRoot, 'frontend', 'dist')
 
 const app = new Hono()
 
@@ -66,10 +68,9 @@ app.route('/api/v1', api)
 app.route('/webhooks', webhooks)
 
 // Serve static files (storage)
-app.use('/static/*', serveStatic({ root: path.join(projectRoot, 'data') }))
+app.use('/static/*', serveStatic({ root: dataRoot }))
 
 // Serve frontend (production build)
-const distPath = path.join(projectRoot, 'frontend', 'dist')
 app.use('*', serveStatic({ root: distPath }))
 app.get('*', serveStatic({ root: distPath, path: 'index.html' }))
 

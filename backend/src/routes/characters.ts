@@ -18,6 +18,10 @@ app.put('/:id', async (c) => {
     if (snakeKey in body) updates[key] = body[snakeKey]
     else if (key in body) updates[key] = body[key]
   }
+  if ('reference_images' in body || 'referenceImages' in body) {
+    const raw = 'reference_images' in body ? body.reference_images : body.referenceImages
+    updates.referenceImages = JSON.stringify(normalizeReferenceImages(raw))
+  }
   if ('voice_style' in body || 'voiceStyle' in body) {
     updates.voiceSampleUrl = null
   }
@@ -72,7 +76,13 @@ app.post('/:id/generate-image', async (c) => {
   const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
   try {
     logTaskStart('CharacterImage', 'generate', { characterId: id, episodeId: ep.id, dramaId: char.dramaId })
-    const genId = await generateImage({ characterId: id, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+    const genId = await generateImage({
+      characterId: id,
+      dramaId: char.dramaId,
+      prompt,
+      referenceImages: normalizeReferenceImages(char.referenceImages),
+      configId: ep.imageConfigId ?? undefined,
+    })
     logTaskSuccess('CharacterImage', 'generate', { characterId: id, generationId: genId })
     return success(c, { image_generation_id: genId })
   } catch (err: any) {
@@ -94,7 +104,13 @@ app.post('/batch-generate-images', async (c) => {
     if (!char) continue
     const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
     try {
-      const genId = await generateImage({ characterId: cid, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+      const genId = await generateImage({
+        characterId: cid,
+        dramaId: char.dramaId,
+        prompt,
+        referenceImages: normalizeReferenceImages(char.referenceImages),
+        configId: ep.imageConfigId ?? undefined,
+      })
       results.push(genId)
     } catch {}
   }
@@ -103,3 +119,18 @@ app.post('/batch-generate-images', async (c) => {
 })
 
 export default app
+
+function normalizeReferenceImages(raw: unknown) {
+  let refs: unknown[] = []
+  if (Array.isArray(raw)) {
+    refs = raw
+  } else if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      refs = Array.isArray(parsed) ? parsed : []
+    } catch {
+      refs = raw.split(',')
+    }
+  }
+  return Array.from(new Set(refs.map(item => String(item || '').trim()).filter(Boolean))).slice(0, 12)
+}

@@ -6,7 +6,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DB_PATH = process.env.DB_PATH || path.resolve(__dirname, '../../../data/huobao_drama.db')
+const DATA_ROOT = process.env.DATA_PATH || path.resolve(__dirname, '../../../data')
+const DB_PATH = process.env.DB_PATH || path.join(DATA_ROOT, 'huobao_drama.db')
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true })
 
@@ -82,6 +83,7 @@ sqlite.exec(`
     prompt TEXT NOT NULL,
     storyboard_count INTEGER DEFAULT 1,
     image_url TEXT,
+    reference_images TEXT,
     status TEXT DEFAULT 'pending',
     local_path TEXT,
     created_at TEXT NOT NULL,
@@ -358,6 +360,7 @@ function ensureColumn(table: string, column: string, definition: string) {
 ensureColumn('episodes', 'image_config_id', 'INTEGER')
 ensureColumn('episodes', 'video_config_id', 'INTEGER')
 ensureColumn('episodes', 'audio_config_id', 'INTEGER')
+ensureColumn('scenes', 'reference_images', 'TEXT')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }

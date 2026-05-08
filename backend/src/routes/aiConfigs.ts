@@ -49,6 +49,13 @@ function viduHeaders(apiKey?: string, withJson = false) {
   return headers
 }
 
+function xiaomiHeaders(apiKey?: string, withJson = false) {
+  const headers: Record<string, string> = {}
+  if (apiKey) headers['api-key'] = apiKey
+  if (withJson) headers['Content-Type'] = 'application/json'
+  return headers
+}
+
 function buildProbe(serviceType: string, provider: string, baseUrl: string, model?: string, apiKey?: string) {
   const p = provider.toLowerCase()
   const m = model || ''
@@ -102,6 +109,24 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
       url: joinProviderUrl(baseUrl, '/v1', path),
       headers: bearerHeaders(apiKey, true),
       body: {},
+    }
+  }
+
+  if (p === 'xiaomi') {
+    return {
+      method: 'GET',
+      url: joinProviderUrl(baseUrl, '/v1', '/models'),
+      headers: xiaomiHeaders(apiKey),
+      body: undefined,
+    }
+  }
+
+  if (p === 'modelmesh') {
+    return {
+      method: 'GET',
+      url: joinProviderUrl(baseUrl, '/v1', '/models/multimodal'),
+      headers: bearerHeaders(apiKey),
+      body: undefined,
     }
   }
 
@@ -182,7 +207,7 @@ app.post('/huobao-preset', async (c) => {
     const values = {
       serviceType: preset.serviceType,
       provider: preset.provider,
-      name: `火宝默认${preset.label}服务`,
+      name: `涵锋默认${preset.label}服务`,
       baseUrl: preset.baseUrl,
       apiKey,
       model: JSON.stringify([preset.model]),

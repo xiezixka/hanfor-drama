@@ -8,7 +8,8 @@ import sharp from 'sharp'
 import { v4 as uuid } from 'uuid'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
+const DATA_ROOT = process.env.DATA_PATH || path.resolve(__dirname, '../../../data')
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(DATA_ROOT, 'static')
 
 /**
  * 下载远程文件到本地存储

@@ -32,12 +32,12 @@
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
               <span v-else class="settings-brand-fallback">火</span>
             </div>
             <div class="settings-brand-copy">
-              <div class="settings-brand-kicker">Huobao Shorts</div>
-              <div class="settings-brand-name">火宝短剧</div>
+              <div class="settings-brand-kicker">Hanfor Teah</div>
+              <div class="settings-brand-name">涵锋短剧</div>
             </div>
           </div>
           <h2 class="settings-title">AI 服务配置</h2>
@@ -47,11 +47,11 @@
           <div class="setup-panel-head">
             <div>
               <div class="setup-kicker">Quick Setup</div>
-              <div class="setup-title">火宝推荐配置</div>
+              <div class="setup-title">涵锋推荐配置</div>
               <div class="setup-desc">一键写入文本、图片、视频、音频四类推荐配置，适合作为开箱默认方案。</div>
             </div>
             <button class="btn btn-primary" @click="presetDialog = true">
-              <Sparkles :size="14" /> 火宝一键配置
+              <Sparkles :size="14" /> 涵锋一键配置
             </button>
           </div>
           <div class="preset-grid">
@@ -122,12 +122,12 @@
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
               <span v-else class="settings-brand-fallback">火</span>
             </div>
             <div class="settings-brand-copy">
-              <div class="settings-brand-kicker">Huobao Shorts</div>
-              <div class="settings-brand-name">火宝短剧</div>
+              <div class="settings-brand-kicker">Hanfor Teah</div>
+              <div class="settings-brand-name">涵锋短剧</div>
             </div>
           </div>
           <h2 class="settings-title">Agent 配置</h2>
@@ -201,12 +201,12 @@
           <div class="settings-head">
             <div class="settings-brand">
               <div class="settings-brand-mark">
-                <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+                <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
                 <span v-else class="settings-brand-fallback">火</span>
               </div>
               <div class="settings-brand-copy">
-                <div class="settings-brand-kicker">Huobao Shorts</div>
-                <div class="settings-brand-name">火宝短剧</div>
+                <div class="settings-brand-kicker">Hanfor Teah</div>
+                <div class="settings-brand-name">涵锋短剧</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -336,8 +336,8 @@
         <div class="config-modal-head">
           <div>
             <div class="setup-kicker">Huobao Preset</div>
-            <h2 class="modal-title">火宝一键配置</h2>
-            <div class="modal-note">按火宝推荐链路自动创建或更新 4 条服务配置，并同时初始化 5 个 Agent 的默认模型。</div>
+            <h2 class="modal-title">涵锋一键配置</h2>
+            <div class="modal-note">按涵锋推荐链路自动创建或更新 4 条服务配置，并同时初始化 5 个 Agent 的默认模型。</div>
           </div>
           <span class="tag tag-success">推荐</span>
         </div>
@@ -421,7 +421,7 @@ const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
 const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '文本' }, { type: 'image', label: '图片' }, { type: 'video', label: '视频' }, { type: 'audio', label: '音频' }]
-const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
+const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'modelmesh', 'openai', 'openrouter', 'vidu', 'volcengine', 'xiaomi']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
 const serviceMeta = {
   text: { label: '文本', desc: '剧本改写、角色场景提取、分镜拆解等 Agent 文本能力' },
@@ -447,6 +447,7 @@ const providerPresets = {
   },
   audio: {
     minimax: { label: '火宝音频', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
+    xiaomi: { label: '小米语音', baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1', models: ['mimo-v2.5-tts'] },
   },
 }
 const huobaoPresetCards = [
@@ -464,6 +465,7 @@ const endpointPrefixes = {
   volcengine: '/api/v3',
   ali: '/api/v1',
   vidu: '/ent/v2',
+  xiaomi: '/v1',
 }
 
 const endpointHint = computed(() => {
@@ -471,7 +473,8 @@ const endpointHint = computed(() => {
   const base = cfgForm.base_url || 'https://...'
   const prefix = endpointPrefixes[provider] || ''
   if (!provider) return '选择服务商后显示推荐端点前缀'
-  return `${base}${prefix}`
+  const normalizedBase = base.replace(/\/+$/, '')
+  return prefix && normalizedBase.endsWith(prefix) ? normalizedBase : `${normalizedBase}${prefix}`
 })
 
 function byType(t) { return cfgs.value.filter(c => c.service_type === t) }
@@ -565,7 +568,7 @@ async function applyHuobaoPreset() {
     await loadCfgs()
     await loadAgents()
     presetDialog.value = false
-    toast.success('火宝推荐配置与默认 Agent LLM 已写入')
+    toast.success('涵锋推荐配置与默认 Agent LLM 已写入')
   } catch (e) {
     toast.error(e.message)
   }

@@ -56,14 +56,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
           language: v.language,
           provider,
         }
-      }) : [
-        { id: 'alloy', name: 'Alloy', gender: '中性', traits: '平衡自然', suitable_for: '旁白、通用', language: '多语言', provider },
-        { id: 'echo', name: 'Echo', gender: '男声', traits: '低沉稳重', suitable_for: '成熟男性、旁白', language: '多语言', provider },
-        { id: 'fable', name: 'Fable', gender: '男声', traits: '温暖富有表现力', suitable_for: '年轻男性、故事叙述', language: '多语言', provider },
-        { id: 'onyx', name: 'Onyx', gender: '男声', traits: '深沉有力', suitable_for: '权威角色、反派', language: '多语言', provider },
-        { id: 'nova', name: 'Nova', gender: '女声', traits: '温柔甜美', suitable_for: '年轻女性、女主', language: '多语言', provider },
-        { id: 'shimmer', name: 'Shimmer', gender: '女声', traits: '明亮活泼', suitable_for: '活泼女性、少女', language: '多语言', provider },
-      ]
+      }) : fallbackVoices(provider)
 
       const payload = {
         provider,
@@ -96,6 +89,31 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
   })
 
   return { getCharacters, listVoices, assignVoice }
+}
+
+function fallbackVoices(provider: string) {
+  if (provider === 'xiaomi') {
+    return [
+      { id: 'mimo_default', name: 'MiMo 默认', gender: '中性', traits: '自然清晰', suitable_for: '旁白、通用角色', language: '中文/英文', provider },
+      { id: '冰糖', name: '冰糖', gender: '女声', traits: '清亮甜美', suitable_for: '年轻女性、活泼角色', language: '中文', provider },
+      { id: '茉莉', name: '茉莉', gender: '女声', traits: '温柔自然', suitable_for: '女主、旁白', language: '中文', provider },
+      { id: '苏打', name: '苏打', gender: '男声', traits: '年轻干净', suitable_for: '年轻男性、轻松对白', language: '中文', provider },
+      { id: '白桦', name: '白桦', gender: '男声', traits: '沉稳清晰', suitable_for: '成熟男性、叙述', language: '中文', provider },
+      { id: 'Mia', name: 'Mia', gender: '女声', traits: '自然英文', suitable_for: '英文旁白、女性角色', language: '英文', provider },
+      { id: 'Chloe', name: 'Chloe', gender: '女声', traits: '明亮英文', suitable_for: '英文女声、活泼角色', language: '英文', provider },
+      { id: 'Milo', name: 'Milo', gender: '男声', traits: '自然英文', suitable_for: '英文男声、年轻角色', language: '英文', provider },
+      { id: 'Dean', name: 'Dean', gender: '男声', traits: '稳重英文', suitable_for: '英文旁白、成熟角色', language: '英文', provider },
+    ]
+  }
+
+  return [
+    { id: 'alloy', name: 'Alloy', gender: '中性', traits: '平衡自然', suitable_for: '旁白、通用', language: '多语言', provider },
+    { id: 'echo', name: 'Echo', gender: '男声', traits: '低沉稳重', suitable_for: '成熟男性、旁白', language: '多语言', provider },
+    { id: 'fable', name: 'Fable', gender: '男声', traits: '温暖富有表现力', suitable_for: '年轻男性、故事叙述', language: '多语言', provider },
+    { id: 'onyx', name: 'Onyx', gender: '男声', traits: '深沉有力', suitable_for: '权威角色、反派', language: '多语言', provider },
+    { id: 'nova', name: 'Nova', gender: '女声', traits: '温柔甜美', suitable_for: '年轻女性、女主', language: '多语言', provider },
+    { id: 'shimmer', name: 'Shimmer', gender: '女声', traits: '明亮活泼', suitable_for: '活泼女性、少女', language: '多语言', provider },
+  ]
 }
 
 function inferGender(name: string, desc: unknown) {

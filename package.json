@@ -1,0 +1,80 @@
+{
+  "name": "hanfor-drama-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "涵锋短剧 Windows 桌面安装包",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "desktop:prepare": "node desktop/scripts/prepare-app.mjs",
+    "desktop:rebuild-native": "electron-rebuild -f --module-dir backend",
+    "desktop:dev": "npm run desktop:prepare && electron .",
+    "dist:win": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win nsis",
+    "dist:win:portable": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win portable"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.hanfor.drama",
+    "productName": "涵锋短剧",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/dist",
+        "to": "backend/dist"
+      },
+      {
+        "from": "backend/package.json",
+        "to": "backend/package.json"
+      },
+      {
+        "from": "backend/node_modules",
+        "to": "backend/node_modules"
+      },
+      {
+        "from": "frontend/.output/public",
+        "to": "frontend/dist"
+      },
+      {
+        "from": "skills",
+        "to": "skills"
+      },
+      {
+        "from": "frontend/public/huobao-logo.png",
+        "to": "assets/hanfor-logo.png"
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "涵锋短剧"
+    }
+  }
+}

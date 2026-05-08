@@ -6,7 +6,7 @@ import { success, badRequest } from '../utils/response.js'
 
 const app = new Hono()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const SKILLS_DIR = path.resolve(__dirname, '../../../skills')
+const SKILLS_DIR = process.env.SKILLS_PATH || path.resolve(__dirname, '../../../skills')
 
 // GET /skills — List all skills (recursive, supports nested dirs)
 app.get('/', async (c) => {

@@ -11,7 +11,8 @@ import { getTTSAdapter } from './adapters/registry.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess, redactUrl } from '../utils/task-logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
+const DATA_ROOT = process.env.DATA_PATH || path.resolve(__dirname, '../../../data')
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(DATA_ROOT, 'static')
 
 interface TTSParams {
   text: string
@@ -75,8 +76,7 @@ export async function generateTTS(params: TTSParams): Promise<string> {
   const result = await resp.json()
   const parsed = adapter.parseResponse(result)
 
-  // 将 hex 解码为二进制
-  const buffer = Buffer.from(parsed.audioHex, 'hex')
+  const buffer = decodeAudioBuffer(parsed)
 
   // 保存到本地
   const audioDir = path.join(STORAGE_ROOT, 'audio')
@@ -94,6 +94,12 @@ export async function generateTTS(params: TTSParams): Promise<string> {
     audioMs: parsed.audioLength,
   })
   return relativePath
+}
+
+function decodeAudioBuffer(parsed: { audioHex?: string; audioBase64?: string }) {
+  if (parsed.audioHex) return Buffer.from(parsed.audioHex, 'hex')
+  if (parsed.audioBase64) return Buffer.from(parsed.audioBase64, 'base64')
+  throw new Error('No audio data in TTS response')
 }
 
 /**

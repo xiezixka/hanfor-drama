@@ -133,11 +133,12 @@ export interface TTSProviderAdapter {
   buildGenerateRequest(config: AIConfig, params: any): ProviderRequest
 
   parseResponse(result: any): {
-    audioHex: string
-    audioLength: number
-    sampleRate: number
-    bitrate: number
+    audioHex?: string
+    audioBase64?: string
+    audioLength?: number
+    sampleRate?: number
+    bitrate?: number
     format: string
-    channel: number
+    channel?: number
   }
 }

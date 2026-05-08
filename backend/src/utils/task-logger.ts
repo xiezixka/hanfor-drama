@@ -69,8 +69,8 @@ function sanitizeValue(value: unknown): unknown {
     const out: Record<string, unknown> = {}
     for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
       const lower = key.toLowerCase()
-      if (['authorization', 'api_key', 'apikey', 'apiKey', 'token', 'access_token'].includes(key) ||
-        lower.includes('authorization') || lower.includes('token') || lower.includes('apikey') || lower.includes('api_key')) {
+      if (['authorization', 'api-key', 'api_key', 'apikey', 'apiKey', 'token', 'access_token'].includes(key) ||
+        lower.includes('authorization') || lower.includes('token') || lower.includes('api-key') || lower.includes('apikey') || lower.includes('api_key')) {
         out[key] = '***'
         continue
       }

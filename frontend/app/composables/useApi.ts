@@ -67,7 +67,21 @@ export const characterAPI = {
 }
 
 export const sceneAPI = {
+  update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
   generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
+}
+
+export const uploadAPI = {
+  image: async (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    const resp = await fetch(`${BASE}/upload/image`, { method: 'POST', body })
+    const json = await resp.json()
+    if (!resp.ok || (json.code && json.code >= 400)) {
+      throw new Error(json.message || `${resp.status}`)
+    }
+    return json.data ?? json
+  },
 }
 
 export const imageAPI = {

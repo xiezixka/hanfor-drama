@@ -36,19 +36,21 @@
         </div>
 
         <div class="card-body">
-          <div class="card-header">
-            <div class="episode-badge">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-              {{ d.episodes?.length || 0 }} 集
+          <div class="project-title-row">
+            <h3 class="project-title">{{ d.title }}</h3>
+            <div class="card-actions">
+              <button class="btn btn-ghost btn-icon card-action" @click.stop="startRename(d)" title="改名" aria-label="改名">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+              </button>
+              <button class="btn btn-ghost btn-icon card-action" @click.stop="delDrama(d)" title="删除" aria-label="删除">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </button>
             </div>
-            <button class="btn btn-ghost btn-icon card-delete" @click.stop="delDrama(d)" title="删除">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </button>
           </div>
-
-          <h3 class="project-title">{{ d.title }}</h3>
 
           <div class="project-meta">
             <span v-if="d.style" class="style-tag">{{ d.style }}</span>
@@ -127,6 +129,33 @@
         </form>
       </div>
     </div>
+
+    <!-- Rename Dialog -->
+    <div v-if="showRename" class="overlay" @click.self="closeRename">
+      <div class="modal card">
+        <div class="modal-header">
+          <div class="modal-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </div>
+          <h2 class="modal-title">项目改名</h2>
+          <p class="modal-desc">{{ renameTarget?.title }}</p>
+        </div>
+        <form @submit.prevent="renameDrama" class="modal-form">
+          <label class="field">
+            <span class="field-label">项目名称 <span class="required">*</span></span>
+            <input v-model="renameForm.title" class="input" placeholder="输入新的项目名称" required autofocus />
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="btn" @click="closeRename">取消</button>
+            <button type="submit" class="btn btn-primary">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -138,7 +167,10 @@ import BaseSelect from '~/components/BaseSelect.vue'
 const dramas = ref([])
 const loading = ref(false)
 const showCreate = ref(false)
+const showRename = ref(false)
+const renameTarget = ref(null)
 const form = ref({ title: '', total_episodes: 1, style: '' })
+const renameForm = ref({ title: '' })
 const styles = ['realistic', 'anime', 'ghibli', 'cinematic', 'comic', 'watercolor']
 const styleSelectOptions = computed(() => styles.map(s => ({ label: s, value: s })))
 
@@ -171,6 +203,32 @@ async function delDrama(d) {
     await dramaAPI.del(d.id)
     toast.success('已删除')
     load()
+  } catch (e) {
+    toast.error(e.message)
+  }
+}
+
+function startRename(d) {
+  renameTarget.value = d
+  renameForm.value = { title: d.title || '' }
+  showRename.value = true
+}
+
+function closeRename() {
+  showRename.value = false
+  renameTarget.value = null
+  renameForm.value = { title: '' }
+}
+
+async function renameDrama() {
+  const title = renameForm.value.title?.trim()
+  if (!renameTarget.value || !title) return
+  try {
+    await dramaAPI.update(renameTarget.value.id, { title })
+    const target = dramas.value.find(d => d.id === renameTarget.value.id)
+    if (target) target.title = title
+    toast.success('已改名')
+    closeRename()
   } catch (e) {
     toast.error(e.message)
   }
@@ -264,19 +322,23 @@ onMounted(load)
 .project-card:hover .film-hole:nth-child(2) { background: var(--accent); }
 .project-card:hover .film-hole:nth-child(4) { background: var(--accent); opacity: 0.5; }
 
-.card-body { padding: 18px 18px 14px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.episode-badge {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 600;
-  color: var(--text-3);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.card-body { padding: 22px 18px 14px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.project-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
-.episode-badge svg { color: var(--accent); }
-
-.card-delete { opacity: 0; transition: opacity 0.15s; }
-.project-card:hover .card-delete { opacity: 1; }
+.card-actions { display: flex; align-items: center; gap: 4px; }
+.card-action {
+  opacity: 0.55;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.card-action:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+.project-card:hover .card-action { opacity: 1; }
 
 .project-title {
   font-family: var(--font-display);
@@ -284,6 +346,9 @@ onMounted(load)
   font-weight: 600;
   line-height: 1.35;
   color: var(--text-0);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .project-meta {

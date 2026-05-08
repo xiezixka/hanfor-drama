@@ -12,8 +12,10 @@ import { now } from '../utils/response.js'
 import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
-const DATA_ROOT = path.resolve(__dirname, '../../../data')
+const DATA_ROOT = process.env.DATA_PATH || path.resolve(__dirname, '../../../data')
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(DATA_ROOT, 'static')
+const FFMPEG_PATH = process.env.FFMPEG_PATH
+if (FFMPEG_PATH) ffmpeg.setFfmpegPath(FFMPEG_PATH)
 
 function toAbsPath(relativePath: string): string {
   if (path.isAbsolute(relativePath)) return relativePath

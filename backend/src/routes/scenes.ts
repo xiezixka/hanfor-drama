@@ -7,6 +7,24 @@ import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger
 
 const app = new Hono()
 
+function normalizeReferenceImages(raw: any): string[] {
+  if (!raw) return []
+  const list = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(raw)
+            return Array.isArray(parsed) ? parsed : raw.split(',')
+          } catch {
+            return raw.split(',')
+          }
+        })()
+      : []
+
+  return [...new Set(list.map(item => String(item || '').trim()).filter(Boolean))].slice(0, 12)
+}
+
 // POST /scenes
 app.post('/', async (c) => {
   const body = await c.req.json()
@@ -33,6 +51,15 @@ app.put('/:id', async (c) => {
   if (body.location !== undefined) updates.location = body.location
   if (body.time !== undefined) updates.time = body.time
   if (body.prompt !== undefined) updates.prompt = body.prompt
+  if (body.image_url !== undefined) updates.imageUrl = body.image_url
+  if (body.imageUrl !== undefined) updates.imageUrl = body.imageUrl
+  if ('reference_images' in body || 'referenceImages' in body) {
+    const raw = 'reference_images' in body ? body.reference_images : body.referenceImages
+    updates.referenceImages = JSON.stringify(normalizeReferenceImages(raw))
+  }
+  if (body.local_path !== undefined) updates.localPath = body.local_path
+  if (body.localPath !== undefined) updates.localPath = body.localPath
+  if (body.status !== undefined) updates.status = body.status
   db.update(schema.scenes).set(updates).where(eq(schema.scenes.id, id)).run()
   return success(c)
 })
@@ -51,7 +78,13 @@ app.post('/:id/generate-image', async (c) => {
   try {
     logTaskStart('SceneImage', 'generate', { sceneId: id, episodeId: ep.id, dramaId: scene.dramaId, location: scene.location })
     db.update(schema.scenes).set({ status: 'processing', updatedAt: now() }).where(eq(schema.scenes.id, id)).run()
-    const genId = await generateImage({ sceneId: id, dramaId: scene.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
+    const genId = await generateImage({
+      sceneId: id,
+      dramaId: scene.dramaId,
+      prompt,
+      referenceImages: normalizeReferenceImages(scene.referenceImages),
+      configId: ep.imageConfigId ?? undefined,
+    })
     logTaskSuccess('SceneImage', 'generate', { sceneId: id, generationId: genId })
     return success(c, { image_generation_id: genId })
   } catch (err: any) {

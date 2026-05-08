@@ -14,8 +14,10 @@ import { generateTTS } from './tts-generation.js'
 import { logTaskError, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
-const DATA_ROOT = path.resolve(__dirname, '../../../data')
+const DATA_ROOT = process.env.DATA_PATH || path.resolve(__dirname, '../../../data')
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(DATA_ROOT, 'static')
+const FFMPEG_PATH = process.env.FFMPEG_PATH
+if (FFMPEG_PATH) ffmpeg.setFfmpegPath(FFMPEG_PATH)
 let subtitleFilterSupport: boolean | null = null
 const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
 const IGNORE_TTS_TEXT = /^(无|无对白|无台词|无旁白|无需配音|无需对白|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
@@ -29,7 +31,7 @@ function toAbsPath(relativePath: string): string {
 function supportsSubtitleFilter(): boolean {
   if (subtitleFilterSupport != null) return subtitleFilterSupport
   try {
-    const output = execFileSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' })
+    const output = execFileSync(FFMPEG_PATH || 'ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' })
     subtitleFilterSupport = /\bsubtitles\b/.test(output)
   } catch {
     subtitleFilterSupport = false

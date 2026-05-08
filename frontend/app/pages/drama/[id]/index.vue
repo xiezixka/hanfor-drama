@@ -83,6 +83,56 @@
       </div>
     </div>
 
+    <div v-if="hasProjectAssets" class="project-assets">
+      <section v-if="drama.characters?.length" class="asset-section">
+        <div class="section-label compact">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          角色形象
+          <span class="asset-count">{{ drama.characters.length }}</span>
+        </div>
+        <div class="asset-grid">
+          <article v-for="c in drama.characters" :key="c.id" class="card asset-card">
+            <div class="asset-thumb">
+              <img v-if="assetImage(c)" :src="'/' + assetImage(c)" :alt="`${c.name} 角色形象`" />
+              <div v-else class="asset-empty">角色</div>
+            </div>
+            <div class="asset-copy">
+              <div class="asset-name">{{ c.name }}</div>
+              <div class="asset-meta">{{ c.role || '角色' }}</div>
+            </div>
+            <button class="btn btn-sm asset-upload-btn" :disabled="isProjectUploading('character', c.id)" @click="startProjectAssetUpload('character', c.id)">
+              <Upload :size="12" /> {{ isProjectUploading('character', c.id) ? '上传中' : '上传形象' }}
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section v-if="drama.scenes?.length" class="asset-section">
+        <div class="section-label compact">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          场景图片
+          <span class="asset-count">{{ drama.scenes.length }}</span>
+        </div>
+        <div class="asset-grid">
+          <article v-for="s in drama.scenes" :key="s.id" class="card asset-card scene">
+            <div class="asset-thumb scene">
+              <img v-if="assetImage(s)" :src="'/' + assetImage(s)" :alt="`${s.location} 场景图片`" />
+              <div v-else class="asset-empty">场景</div>
+            </div>
+            <div class="asset-copy">
+              <div class="asset-name">{{ s.location }}</div>
+              <div class="asset-meta">{{ s.time || '未设时间' }}</div>
+            </div>
+            <button class="btn btn-sm asset-upload-btn" :disabled="isProjectUploading('scene', s.id)" @click="startProjectAssetUpload('scene', s.id)">
+              <Upload :size="12" /> {{ isProjectUploading('scene', s.id) ? '上传中' : '上传场景' }}
+            </button>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <input ref="projectAssetUploadInput" class="sr-only" type="file" accept="image/*" @change="handleProjectAssetUploadChange" />
+
     <div v-if="addDialog" class="dialog-mask" @click.self="addDialog = false">
       <div class="card dialog">
         <div class="dialog-head">
@@ -151,7 +201,8 @@
 
 <script setup>
 import { toast } from 'vue-sonner'
-import { aiConfigAPI, dramaAPI, episodeAPI } from '~/composables/useApi'
+import { Upload } from 'lucide-vue-next'
+import { aiConfigAPI, characterAPI, dramaAPI, episodeAPI, sceneAPI, uploadAPI } from '~/composables/useApi'
 
 const route = useRoute()
 const drama = ref(null)
@@ -165,8 +216,68 @@ const audioConfigs = ref([])
 const newEpisodeImageConfigId = ref(null)
 const newEpisodeVideoConfigId = ref(null)
 const newEpisodeAudioConfigId = ref(null)
+const projectAssetUploadInput = ref(null)
+const projectAssetUploadTarget = ref(null)
+const projectUploadingKey = ref('')
 
 function hasScript(ep) { return !!(ep.script_content || ep.scriptContent) }
+const hasProjectAssets = computed(() => !!(drama.value?.characters?.length || drama.value?.scenes?.length))
+
+function assetImage(item) {
+  return item?.image_url || item?.imageUrl || ''
+}
+
+function projectAssetKey(type, id) {
+  return `${type}:${id}`
+}
+
+function isProjectUploading(type, id) {
+  return projectUploadingKey.value === projectAssetKey(type, id)
+}
+
+function startProjectAssetUpload(type, id) {
+  projectAssetUploadTarget.value = { type, id }
+  if (projectAssetUploadInput.value) {
+    projectAssetUploadInput.value.value = ''
+    projectAssetUploadInput.value.click()
+  }
+}
+
+async function handleProjectAssetUploadChange(event) {
+  const file = event.target.files?.[0]
+  const target = projectAssetUploadTarget.value
+  if (!file || !target) return
+  if (!file.type.startsWith('image/')) {
+    toast.warning('请选择图片文件')
+    return
+  }
+
+  projectUploadingKey.value = projectAssetKey(target.type, target.id)
+  try {
+    const uploaded = await uploadAPI.image(file)
+    const imagePath = uploaded.path || String(uploaded.url || '').replace(/^\/+/, '')
+    if (!imagePath) throw new Error('上传成功，但没有返回图片路径')
+
+    if (target.type === 'character') {
+      await characterAPI.update(target.id, { image_url: imagePath, local_path: imagePath })
+      const char = drama.value?.characters?.find(c => c.id === target.id)
+      if (char) Object.assign(char, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath })
+      toast.success('角色形象已上传')
+    } else {
+      await sceneAPI.update(target.id, { image_url: imagePath, local_path: imagePath, status: 'completed' })
+      const scene = drama.value?.scenes?.find(s => s.id === target.id)
+      if (scene) Object.assign(scene, { image_url: imagePath, imageUrl: imagePath, local_path: imagePath, localPath: imagePath, status: 'completed' })
+      toast.success('场景图片已上传')
+    }
+    await load()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    projectUploadingKey.value = ''
+    projectAssetUploadTarget.value = null
+    if (event.target) event.target.value = ''
+  }
+}
 
 function configLabel(config) {
   if (!config) return ''
@@ -337,6 +448,101 @@ onMounted(() => { load(); loadConfigs() })
 
 .ep-arrow { color: var(--text-3); flex-shrink: 0; transition: transform 0.18s; }
 .ep-card:hover .ep-arrow { transform: translateX(3px); color: var(--accent); }
+
+/* Project assets */
+.project-assets {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 980px;
+  margin-top: 28px;
+}
+.asset-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.section-label.compact {
+  margin-bottom: 0;
+}
+.asset-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.asset-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+.asset-thumb {
+  width: 52px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+}
+.asset-thumb.scene {
+  aspect-ratio: 16 / 10;
+}
+.asset-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.asset-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+.asset-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.asset-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-0);
+}
+.asset-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.asset-upload-btn {
+  grid-column: 1 / -1;
+  width: 100%;
+}
 
 /* Empty */
 .ep-empty {
