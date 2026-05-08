@@ -8,8 +8,8 @@
     "desktop:prepare": "node desktop/scripts/prepare-app.mjs",
     "desktop:rebuild-native": "electron-rebuild -f --module-dir backend",
     "desktop:dev": "npm run desktop:prepare && electron .",
-    "dist:win": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win nsis",
-    "dist:win:portable": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win portable"
+    "dist:win": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win nsis --publish never",
+    "dist:win:portable": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win portable --publish never"
   },
   "dependencies": {
     "ffmpeg-static": "^5.2.0"
