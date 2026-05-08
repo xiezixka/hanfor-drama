@@ -2,12 +2,13 @@
   "name": "hanfor-drama-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "涵锋短剧 Windows 桌面安装包",
+  "description": "涵锋短剧桌面安装包",
   "main": "desktop/main.cjs",
   "scripts": {
     "desktop:prepare": "node desktop/scripts/prepare-app.mjs",
     "desktop:rebuild-native": "electron-rebuild -f --module-dir backend",
     "desktop:dev": "npm run desktop:prepare && electron .",
+    "dist:mac": "npm run desktop:prepare && npm run desktop:rebuild-native && node desktop/scripts/build-mac.mjs",
     "dist:win": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win nsis --publish never",
     "dist:win:portable": "npm run desktop:prepare && npm run desktop:rebuild-native && electron-builder --win portable --publish never"
   },
@@ -68,6 +69,21 @@
         }
       ],
       "artifactName": "${productName}-${version}-Setup.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.video",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "涵锋短剧 ${version}"
     },
     "nsis": {
       "oneClick": false,
