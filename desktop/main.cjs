@@ -125,7 +125,7 @@ async function startBackend() {
   serverProcess.stderr.on('data', (chunk) => console.error(`[server] ${chunk}`))
   serverProcess.on('exit', (code) => {
     if (code !== 0 && mainWindow) {
-      dialog.showErrorBox('涵锋短剧服务已停止', `本地服务退出，代码：${code}`)
+      dialog.showErrorBox('涵锋AI服务已停止', `本地服务退出，代码：${code}`)
     }
   })
 
@@ -138,7 +138,7 @@ function createWindow() {
     height: 920,
     minWidth: 1180,
     minHeight: 760,
-    title: '涵锋短剧',
+    title: '涵锋AI',
     backgroundColor: '#F3F6FB',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -155,7 +155,7 @@ app.whenReady().then(async () => {
     await startBackend()
     createWindow()
   } catch (error) {
-    dialog.showErrorBox('涵锋短剧启动失败', error instanceof Error ? error.message : String(error))
+    dialog.showErrorBox('涵锋AI启动失败', error instanceof Error ? error.message : String(error))
     app.quit()
   }
 })

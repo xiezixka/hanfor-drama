@@ -1,4 +1,4 @@
-# 涵锋短剧 Windows 安装包
+# 涵锋AI Windows 安装包
 
 这个项目可以封装成 Windows 桌面软件。安装后用户点击桌面图标，应用会自动启动本地服务并打开桌面窗口，不需要手动运行 Docker 或命令。
 
@@ -21,7 +21,7 @@ npm run dist:win
 打包脚本会先编译前后端，再把 SQLite、Sharp 这类原生模块重建为 Electron 可用的 Windows 版本。生成的安装包在：
 
 ```text
-release/涵锋短剧-1.0.0-Setup.exe
+release/涵锋AI-1.0.0-Setup.exe
 ```
 
 ## 用 GitHub Actions 打包
@@ -32,14 +32,14 @@ release/涵锋短剧-1.0.0-Setup.exe
 .github/workflows/windows-desktop.yml
 ```
 
-推到 GitHub 后，手动运行 `Build Windows Desktop App`，完成后在 Artifacts 里下载 Windows 安装包。
+推到 GitHub 后，手动运行 `Build Desktop Apps`，完成后在 Artifacts 里下载 Windows 安装包。
 
 ## 数据保存位置
 
 安装包不会内置当前电脑里的项目数据和 API Key。用户在 Windows 上使用时，数据会保存在该用户自己的应用数据目录里：
 
 ```text
-%APPDATA%/涵锋短剧/data
+%APPDATA%/涵锋AI/data
 ```
 
 包括数据库、上传图片、生成音频、生成视频和合成视频。

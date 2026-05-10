@@ -1,8 +1,8 @@
 {
-  "name": "hanfor-drama-desktop",
+  "name": "hanfor-ai-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "涵锋短剧桌面安装包",
+  "description": "涵锋AI桌面安装包",
   "main": "desktop/main.cjs",
   "scripts": {
     "desktop:prepare": "node desktop/scripts/prepare-app.mjs",
@@ -21,8 +21,9 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.hanfor.drama",
-    "productName": "涵锋短剧",
+    "appId": "com.hanfor.ai",
+    "productName": "涵锋AI",
+    "icon": "build/icon.png",
     "directories": {
       "output": "release"
     },
@@ -52,8 +53,8 @@
         "to": "skills"
       },
       {
-        "from": "frontend/public/huobao-logo.png",
-        "to": "assets/hanfor-logo.png"
+        "from": "build/icon.png",
+        "to": "assets/app-icon.png"
       }
     ],
     "asarUnpack": [
@@ -68,6 +69,7 @@
           ]
         }
       ],
+      "icon": "build/icon.ico",
       "artifactName": "${productName}-${version}-Setup.${ext}"
     },
     "mac": {
@@ -79,18 +81,19 @@
           ]
         }
       ],
-      "category": "public.app-category.video",
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity",
       "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
     },
     "dmg": {
-      "title": "涵锋短剧 ${version}"
+      "title": "涵锋AI ${version}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "涵锋短剧"
+      "shortcutName": "涵锋AI"
     }
   }
 }
