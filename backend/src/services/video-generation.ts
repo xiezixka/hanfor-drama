@@ -2,7 +2,7 @@ import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { getActiveConfig, getConfigById } from './ai.js'
 import { now } from '../utils/response.js'
-import { downloadFile, readImageAsCompressedDataUrl } from '../utils/storage.js'
+import { downloadFile, readImageAsCompressedDataUrl, saveBinaryFile, saveDataUrlFile } from '../utils/storage.js'
 import { getVideoAdapter } from './adapters/registry.js'
 import type { AIConfig } from './adapters/types.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess, logTaskWarn, redactUrl } from '../utils/task-logger.js'
@@ -123,7 +123,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
     const resp = await fetch(url, {
       method,
       headers,
-      body: JSON.stringify(body),
+      body: toFetchBody(body),
     })
 
     if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`)
@@ -134,7 +134,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
     if (!isAsync && videoUrl) {
       logTaskProgress('VideoTask', 'sync-complete', { id, videoUrl })
       // 同步模式
-      await handleVideoComplete(id, videoUrl, record.duration)
+      await handleVideoComplete(id, videoUrl, record.duration, record.storyboardId, config)
       return
     }
 
@@ -144,12 +144,6 @@ async function processVideoGeneration(id: number, config: AIConfig) {
       .where(eq(schema.videoGenerations.id, id))
       .run()
     logTaskProgress('VideoTask', 'poll-start', { id, taskId, provider: config.provider })
-
-    // Vidu 没有轮询端点，跳过轮询（依赖 Webhook 回调）
-    if (adapter.provider === 'vidu') {
-      logTaskProgress('VideoTask', 'webhook-wait', { id, taskId, provider: adapter.provider })
-      return
-    }
 
     pollVideoTask(id, config, taskId!, record.storyboardId)
   } catch (err: any) {
@@ -218,7 +212,7 @@ async function pollVideoTask(id: number, config: AIConfig, taskId: string, story
 
       if (pollResp.status === 'completed' && pollResp.videoUrl) {
         logTaskSuccess('VideoTask', 'poll-complete', { id, taskId, videoUrl: pollResp.videoUrl })
-        await handleVideoComplete(id, pollResp.videoUrl, null, storyboardId)
+        await handleVideoComplete(id, pollResp.videoUrl, null, storyboardId, config)
         return
       }
       if (pollResp.status === 'failed') {
@@ -239,8 +233,22 @@ async function pollVideoTask(id: number, config: AIConfig, taskId: string, story
   }
 }
 
-async function handleVideoComplete(id: number, videoUrl: string, duration: number | null | undefined, storyboardId?: number | null) {
-  const localPath = await downloadFile(videoUrl, 'videos')
+function toFetchBody(body: any): BodyInit | undefined {
+  if (body == null) return undefined
+  if (typeof FormData !== 'undefined' && body instanceof FormData) return body
+  if (typeof Blob !== 'undefined' && body instanceof Blob) return body
+  if (typeof body === 'string') return body
+  return JSON.stringify(body)
+}
+
+async function handleVideoComplete(
+  id: number,
+  videoUrl: string,
+  duration: number | null | undefined,
+  storyboardId?: number | null,
+  config?: AIConfig,
+) {
+  const localPath = await saveCompletedVideo(videoUrl, config)
   db.update(schema.videoGenerations)
     .set({ videoUrl, localPath, status: 'completed', completedAt: now(), updatedAt: now() })
     .where(eq(schema.videoGenerations.id, id))
@@ -253,4 +261,34 @@ async function handleVideoComplete(id: number, videoUrl: string, duration: numbe
       .where(eq(schema.storyboards.id, storyboardId))
       .run()
   }
+}
+
+async function saveCompletedVideo(videoUrl: string, config?: AIConfig) {
+  if (videoUrl.startsWith('data:')) {
+    return saveDataUrlFile(videoUrl, 'videos')
+  }
+
+  if (config) {
+    const adapter = getVideoAdapter(config.provider)
+    const downloadRequest = adapter.buildDownloadRequest?.(config, videoUrl)
+    if (downloadRequest) {
+      const resp = await fetch(downloadRequest.url, {
+        method: downloadRequest.method,
+        headers: downloadRequest.headers,
+        body: toFetchBody(downloadRequest.body),
+      })
+      if (!resp.ok) throw new Error(`Download failed: ${resp.status}`)
+      const contentType = resp.headers.get('content-type') || 'video/mp4'
+      return saveBinaryFile(Buffer.from(await resp.arrayBuffer()), 'videos', extFromContentType(contentType))
+    }
+  }
+
+  return downloadFile(videoUrl, 'videos')
+}
+
+function extFromContentType(contentType: string) {
+  if (contentType.includes('webm')) return '.webm'
+  if (contentType.includes('quicktime')) return '.mov'
+  if (contentType.includes('mpeg')) return '.mpeg'
+  return '.mp4'
 }

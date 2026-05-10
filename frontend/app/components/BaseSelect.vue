@@ -53,7 +53,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { ChevronDown, Search } from 'lucide-vue-next'
 
 const props = defineProps({
-  modelValue: { type: [String, Number], default: '' },
+  modelValue: { type: [String, Number, null], default: '' },
   options: { type: Array, default: () => [] }, // [{ label, value, group? }, ...] or [{ label, group, options: [] }]
   placeholder: { type: String, default: '请选择...' },
   searchable: { type: Boolean, default: true },
@@ -76,7 +76,7 @@ const normalizedGroups = computed(() => {
   if (props.options[0]?.options) {
     return props.options.map(g => ({
       label: g.label || '',
-      options: g.options.map(o => ({ label: o.label ?? o, value: o.value ?? o })),
+      options: g.options.map(o => ({ label: o.label ?? o, value: Object.prototype.hasOwnProperty.call(o, 'value') ? o.value : o })),
     }))
   }
   // Flat list with optional group property
@@ -84,7 +84,7 @@ const normalizedGroups = computed(() => {
   for (const o of props.options) {
     const label = o.group || ''
     if (!map.has(label)) map.set(label, [])
-    map.get(label).push({ label: o.label ?? o, value: o.value ?? o })
+    map.get(label).push({ label: o.label ?? o, value: Object.prototype.hasOwnProperty.call(o, 'value') ? o.value : o })
   }
   return Array.from(map.entries()).map(([label, options]) => ({ label, options }))
 })

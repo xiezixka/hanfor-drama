@@ -1,95 +1,63 @@
 <template>
-  <div class="page">
-    <!-- Page Header -->
-    <div class="page-head">
-      <div class="head-left">
-        <h1 class="page-title">短剧项目</h1>
-        <p class="page-desc">{{ dramas.length }} 个项目</p>
-      </div>
-      <button class="btn btn-primary" @click="showCreate = true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        新建项目
-      </button>
-    </div>
+  <div class="home-page">
+    <section class="home-head">
+      <span class="home-kicker">HANFOR AI</span>
+      <h1>首页</h1>
+      <p>选择一个入口开始创作：做短剧、生成图片，或者先试一段语音。</p>
+    </section>
 
-    <!-- Loading -->
-    <div v-if="loading" class="loading-state">
-      <div class="loading-grid">
-        <div v-for="i in 3" :key="i" class="skeleton-card card"></div>
-      </div>
-    </div>
-
-    <!-- Grid -->
-    <div v-else class="grid">
-      <div
-        v-for="(d, i) in dramas"
-        :key="d.id"
-        class="card project-card"
-        :style="{ animationDelay: `${i * 0.06}s` }"
-        @click="navigateTo(`/drama/${d.id}`)"
-      >
-        <!-- Card film strip decoration -->
-        <div class="card-film-strip">
-          <span v-for="j in 5" :key="j" class="film-hole"></span>
-        </div>
-
-        <div class="card-body">
-          <div class="project-title-row">
-            <h3 class="project-title">{{ d.title }}</h3>
-            <div class="card-actions">
-              <button class="btn btn-ghost btn-icon card-action" @click.stop="startRename(d)" title="改名" aria-label="改名">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-                </svg>
-              </button>
-              <button class="btn btn-ghost btn-icon card-action" @click.stop="delDrama(d)" title="删除" aria-label="删除">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="project-meta">
-            <span v-if="d.style" class="style-tag">{{ d.style }}</span>
-            <span class="meta-item">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              {{ d.characters?.length || 0 }}
-            </span>
-            <span class="meta-item">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
-              {{ d.scenes?.length || 0 }}
-            </span>
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <div class="progress-mini">
-            <div class="progress-mini-track">
-              <div class="progress-mini-fill" :style="{ width: getProgress(d) + '%' }"></div>
-            </div>
-          </div>
-          <span class="card-date">{{ fmtDate(d.updated_at || d.updatedAt) }}</span>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-if="!dramas.length" class="card empty-card" @click="showCreate = true">
-        <div class="empty-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+    <section class="home-actions">
+      <button type="button" class="card home-card primary-card" @click="showCreate = true">
+        <span class="home-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <rect x="3" y="3" width="18" height="18" rx="3"/>
             <line x1="12" y1="8" x2="12" y2="16"/>
             <line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
-        </div>
-        <p class="empty-title">新建第一个短剧项目</p>
-        <p class="empty-desc">从剧本到成片，AI 助力的短剧制作工作台</p>
-      </div>
-    </div>
+        </span>
+        <strong>新建一个短剧</strong>
+        <small>从剧本到成片，进入短剧制作工作台</small>
+      </button>
 
-    <!-- Create Dialog -->
+      <button type="button" class="card home-card" @click="navigateTo('/image-projects')">
+        <span class="home-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </span>
+        <strong>先生成一张图片</strong>
+        <small>做角色图、场景图、海报或分镜参考图</small>
+      </button>
+
+      <button type="button" class="card home-card" @click="navigateTo('/voice-projects')">
+        <span class="home-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/>
+            <path d="M8 7v10"/>
+            <path d="M16 7v10"/>
+            <path d="M4 11v2"/>
+            <path d="M20 11v2"/>
+          </svg>
+        </span>
+        <strong>先生成一段语音</strong>
+        <small>试旁白、对白，或验证音色效果</small>
+      </button>
+    </section>
+
+    <section class="home-shortcuts card">
+      <div>
+        <h2>继续已有内容</h2>
+        <p>如果已经创建过项目，可以直接进入对应工作区。</p>
+      </div>
+      <div class="shortcut-actions">
+        <button type="button" class="btn" @click="navigateTo('/drama-projects')">短剧项目</button>
+        <button type="button" class="btn" @click="navigateTo('/assets')">资产库</button>
+        <button type="button" class="btn" @click="navigateTo('/settings')">AI 设置</button>
+      </div>
+    </section>
+
     <div v-if="showCreate" class="overlay" @click.self="showCreate = false">
       <div class="modal card">
         <div class="modal-header">
@@ -102,7 +70,7 @@
           <h2 class="modal-title">新建短剧项目</h2>
           <p class="modal-desc">输入项目基本信息，即可开始制作</p>
         </div>
-        <form @submit.prevent="create" class="modal-form">
+        <form class="modal-form" @submit.prevent="create">
           <label class="field">
             <span class="field-label">项目名称 <span class="required">*</span></span>
             <input v-model="form.title" class="input" placeholder="例如：都市情感短剧《时光邮局》" required autofocus />
@@ -119,39 +87,7 @@
           </div>
           <div class="modal-actions">
             <button type="button" class="btn" @click="showCreate = false">取消</button>
-            <button type="submit" class="btn btn-primary">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              创建项目
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Rename Dialog -->
-    <div v-if="showRename" class="overlay" @click.self="closeRename">
-      <div class="modal card">
-        <div class="modal-header">
-          <div class="modal-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-            </svg>
-          </div>
-          <h2 class="modal-title">项目改名</h2>
-          <p class="modal-desc">{{ renameTarget?.title }}</p>
-        </div>
-        <form @submit.prevent="renameDrama" class="modal-form">
-          <label class="field">
-            <span class="field-label">项目名称 <span class="required">*</span></span>
-            <input v-model="renameForm.title" class="input" placeholder="输入新的项目名称" required autofocus />
-          </label>
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="closeRename">取消</button>
-            <button type="submit" class="btn btn-primary">
-              保存
-            </button>
+            <button type="submit" class="btn btn-primary">创建项目</button>
           </div>
         </form>
       </div>
@@ -163,276 +99,129 @@
 import { toast } from 'vue-sonner'
 import { dramaAPI } from '~/composables/useApi'
 import BaseSelect from '~/components/BaseSelect.vue'
+import { visualStyleOptions } from '~/utils/visualStyles'
 
-const dramas = ref([])
-const loading = ref(false)
 const showCreate = ref(false)
-const showRename = ref(false)
-const renameTarget = ref(null)
 const form = ref({ title: '', total_episodes: 1, style: '' })
-const renameForm = ref({ title: '' })
-const styles = ['realistic', 'anime', 'ghibli', 'cinematic', 'comic', 'watercolor']
-const styleSelectOptions = computed(() => styles.map(s => ({ label: s, value: s })))
+const styleSelectOptions = computed(() => visualStyleOptions)
 
-async function load() {
-  loading.value = true
-  try {
-    const res = await dramaAPI.list()
-    dramas.value = res.items || []
-  } catch (e) {
-    toast.error(e.message)
-  } finally {
-    loading.value = false
-  }
-}
+useHead({ title: '首页 - 涵锋Ai' })
 
 async function create() {
   if (!form.value.title?.trim()) return
   try {
-    const d = await dramaAPI.create(form.value)
+    const drama = await dramaAPI.create(form.value)
     showCreate.value = false
-    navigateTo(`/drama/${d.id}`)
-  } catch (e) {
-    toast.error(e.message)
+    navigateTo(`/drama/${drama.id}`)
+  } catch (error) {
+    toast.error(error.message)
   }
 }
-
-async function delDrama(d) {
-  if (!confirm(`确定删除「${d.title}」？此操作不可恢复。`)) return
-  try {
-    await dramaAPI.del(d.id)
-    toast.success('已删除')
-    load()
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
-
-function startRename(d) {
-  renameTarget.value = d
-  renameForm.value = { title: d.title || '' }
-  showRename.value = true
-}
-
-function closeRename() {
-  showRename.value = false
-  renameTarget.value = null
-  renameForm.value = { title: '' }
-}
-
-async function renameDrama() {
-  const title = renameForm.value.title?.trim()
-  if (!renameTarget.value || !title) return
-  try {
-    await dramaAPI.update(renameTarget.value.id, { title })
-    const target = dramas.value.find(d => d.id === renameTarget.value.id)
-    if (target) target.title = title
-    toast.success('已改名')
-    closeRename()
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
-
-function fmtDate(s) {
-  if (!s) return ''
-  const d = new Date(s)
-  const now = new Date()
-  const diff = now.getTime() - d.getTime()
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`
-  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-}
-
-function getProgress(d) {
-  // Rough progress based on episodes with scripts
-  if (!d.episodes?.length) return 0
-  const scripted = d.episodes.filter(e => e.script_content || e.scriptContent).length
-  return Math.round((scripted / d.episodes.length) * 100)
-}
-
-onMounted(load)
 </script>
 
 <style scoped>
-.page {
-  padding: 28px 48px 40px;
-  overflow-y: auto;
-  height: 100%;
+.home-page {
+  flex: 1;
+  overflow: auto;
+  padding: 42px 48px;
   animation: fadeUp 0.35s var(--ease-out) both;
 }
-
-/* Page Head */
-.page-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 28px;
+.home-head {
+  max-width: 720px;
+  margin-bottom: 26px;
 }
-.head-left { display: flex; flex-direction: column; gap: 4px; }
-.page-title {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-0);
+.home-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
 }
-.page-desc { font-size: 13px; color: var(--text-3); font-weight: 400; }
-
-/* Grid */
-.grid {
+.home-head h1 {
+  font-size: 34px;
+}
+.home-head p {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.home-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
-
-/* Project Card */
-.project-card {
-  padding: 0;
+.home-card {
+  min-height: 210px;
+  padding: 32px 26px;
+  border-style: dashed;
+  border-width: 1.5px;
+  background: var(--bg-surface);
+  color: inherit;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  animation: fadeUp 0.4s var(--ease-out) both;
-  transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out), border-color 0.2s;
-}
-.project-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
-}
-
-/* Film strip decoration */
-.card-film-strip {
-  display: flex;
-  justify-content: space-around;
   align-items: center;
-  padding: 6px 16px;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-}
-.film-hole {
-  width: 10px; height: 8px;
-  background: var(--bg-3);
-  border-radius: 2px;
-  transition: background 0.2s;
-}
-.project-card:hover .film-hole:nth-child(2) { background: var(--accent); }
-.project-card:hover .film-hole:nth-child(4) { background: var(--accent); opacity: 0.5; }
-
-.card-body { padding: 22px 18px 14px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-.project-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-}
-.card-actions { display: flex; align-items: center; gap: 4px; }
-.card-action {
-  opacity: 0.55;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
-}
-.card-action:hover {
-  opacity: 1;
-  color: var(--accent);
-}
-.project-card:hover .card-action { opacity: 1; }
-
-.project-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--text-0);
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-}
-
-.project-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.style-tag {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 8px;
-  background: var(--accent-bg);
-  color: var(--accent-text);
-  border-radius: 99px;
-  border: 1px solid rgba(184,120,20,0.12);
-}
-.meta-item {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 12px; color: var(--text-3);
-}
-
-.card-footer {
-  padding: 10px 18px 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.progress-mini { flex: 1; }
-.progress-mini-track {
-  height: 3px; background: var(--bg-3);
-  border-radius: 99px; overflow: hidden;
-}
-.progress-mini-fill {
-  height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 99px;
-  transition: width 0.6s var(--ease-out);
-}
-.card-date { font-size: 11px; color: var(--text-3); white-space: nowrap; }
-
-/* Loading Skeleton */
-.loading-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-.skeleton-card {
-  height: 180px;
-  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-hover) 50%, var(--bg-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border: none;
-}
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-/* Empty Card */
-.empty-card {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 10px; padding: 56px 32px;
-  cursor: pointer;
-  border-style: dashed; border-width: 1.5px;
   text-align: center;
-  transition: all 0.2s var(--ease-out);
+  font-family: var(--font-body);
 }
-.empty-card:hover {
+.home-card:hover {
   border-color: var(--accent);
   background: var(--accent-bg);
   transform: translateY(-2px);
 }
-.empty-icon {
-  width: 56px; height: 56px; border-radius: var(--radius-lg);
-  background: var(--bg-2);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-3);
-  margin-bottom: 4px;
-  transition: all 0.2s;
+.primary-card {
+  border-color: rgba(76,125,255,0.28);
+  background: linear-gradient(180deg, var(--bg-surface), var(--bg-1));
 }
-.empty-card:hover .empty-icon { background: var(--accent-bg); color: var(--accent); }
-.empty-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
-.empty-desc { font-size: 12px; color: var(--text-3); max-width: 220px; line-height: 1.6; }
-
-/* Modal */
+.home-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-2);
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-card:hover .home-icon {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.home-card strong {
+  color: var(--text-0);
+  font-size: 16px;
+}
+.home-card small {
+  max-width: 260px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.home-shortcuts {
+  margin-top: 18px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.home-shortcuts h2 {
+  font-size: 17px;
+}
+.home-shortcuts p {
+  margin-top: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.shortcut-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .modal { padding: 32px; width: 460px; box-shadow: var(--shadow-elevated); animation: scaleIn 0.2s var(--ease-out); }
 .modal-header { margin-bottom: 24px; display: flex; flex-direction: column; gap: 6px; }
 .modal-icon {
@@ -449,4 +238,10 @@ onMounted(load)
 .required { color: var(--error); }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 6px; }
+@media (max-width: 900px) {
+  .home-page { padding: 28px 24px; }
+  .home-shortcuts { align-items: flex-start; flex-direction: column; }
+  .shortcut-actions { justify-content: flex-start; }
+  .field-row { grid-template-columns: 1fr; }
+}
 </style>

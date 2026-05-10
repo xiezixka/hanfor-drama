@@ -9,10 +9,10 @@ import { redactUrl, logTaskError, logTaskProgress, logTaskSuccess } from '../uti
 const app = new Hono()
 
 const HUOBAO_PRESET_SERVICES = [
-  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
-  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
+  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site/v1', model: 'gemini-3-pro-preview', priority: 100 },
+  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site/v1beta', model: 'gemini-3-pro-image-preview', priority: 99 },
+  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine/api/v3', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
+  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax/v1', model: 'speech-2.8-hd', priority: 97 },
 ] as const
 
 const HUOBAO_AGENT_DEFAULTS = [
@@ -24,6 +24,33 @@ const HUOBAO_AGENT_DEFAULTS = [
 ] as const
 
 const HUOBAO_AGENT_MODEL = 'gemini-3-pro-preview'
+
+function parseJsonObject(value?: string | null): Record<string, any> {
+  if (!value) return {}
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function parseConfigRow(row: typeof schema.aiServiceConfigs.$inferSelect) {
+  const settings = parseJsonObject(row.settings)
+  return {
+    ...toSnakeCase(row),
+    model: row.model ? JSON.parse(row.model) : [],
+    settings,
+    bound_projects: Array.isArray(settings.bound_projects) ? settings.bound_projects : null,
+  }
+}
+
+function mergeConfigSettings(current: string | null | undefined, patch: Record<string, any>) {
+  return JSON.stringify({
+    ...parseJsonObject(current),
+    ...patch,
+  })
+}
 
 function bearerHeaders(apiKey?: string, withJson = false) {
   const headers: Record<string, string> = {}
@@ -66,7 +93,7 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
     return { method: 'POST', url: url.toString(), headers: geminiHeaders(apiKey, true), body: {} }
   }
 
-  if (p === 'openai' || p === 'openrouter' || p === 'chatfire') {
+  if (p === 'openai' || p === 'openrouter' || p === 'chatfire' || p === 'sora' || p === 'veo' || p === 'antsk') {
     return {
       method: 'GET',
       url: joinProviderUrl(baseUrl, '/v1', '/models'),
@@ -153,10 +180,7 @@ app.get('/', async (c) => {
   let rows = db.select().from(schema.aiServiceConfigs).all()
   if (serviceType) rows = rows.filter(r => r.serviceType === serviceType)
 
-  const parsed = rows.map(r => ({
-    ...toSnakeCase(r),
-    model: r.model ? JSON.parse(r.model) : [],
-  }))
+  const parsed = rows.map(r => parseConfigRow(r))
   return success(c, parsed)
 })
 
@@ -170,6 +194,10 @@ app.post('/', async (c) => {
     return badRequest(c, 'service_type and provider are required')
   }
 
+  const settings = Array.isArray(body.bound_projects)
+    ? JSON.stringify({ bound_projects: body.bound_projects })
+    : undefined
+
   const res = db.insert(schema.aiServiceConfigs).values({
     serviceType: body.service_type,
     provider: body.provider,
@@ -179,6 +207,7 @@ app.post('/', async (c) => {
     model: JSON.stringify(body.model || []),
     priority: body.priority || 0,
     isActive: true,
+    ...(settings ? { settings } : {}),
     createdAt: ts,
     updatedAt: ts,
   }).run()
@@ -186,10 +215,7 @@ app.post('/', async (c) => {
   const [row] = db.select().from(schema.aiServiceConfigs)
     .where(eq(schema.aiServiceConfigs.id, Number(res.lastInsertRowid))).all()
 
-  return created(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
+  return created(c, parseConfigRow(row))
 })
 
 // POST /ai-configs/huobao-preset
@@ -254,10 +280,7 @@ app.post('/huobao-preset', async (c) => {
     }
   }
 
-  const configs = db.select().from(schema.aiServiceConfigs).all().map(row => ({
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  }))
+  const configs = db.select().from(schema.aiServiceConfigs).all().map(row => parseConfigRow(row))
   const agents = db.select().from(schema.agentConfigs).all().map(row => toSnakeCase(row))
 
   logTaskSuccess('AIConfig', 'huobao-preset-applied', {
@@ -346,10 +369,7 @@ app.get('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const [row] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id)).all()
   if (!row) return notFound(c)
-  return success(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
+  return success(c, parseConfigRow(row))
 })
 
 // PUT /ai-configs/:id
@@ -365,6 +385,11 @@ app.put('/:id', async (c) => {
   if ('model' in body) updates.model = JSON.stringify(body.model)
   if ('priority' in body) updates.priority = body.priority
   if ('is_active' in body) updates.isActive = body.is_active
+  if (Array.isArray(body.bound_projects)) {
+    const [current] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id)).all()
+    if (!current) return notFound(c)
+    updates.settings = mergeConfigSettings(current.settings, { bound_projects: body.bound_projects })
+  }
 
   db.update(schema.aiServiceConfigs).set(updates).where(eq(schema.aiServiceConfigs.id, id)).run()
   return success(c)

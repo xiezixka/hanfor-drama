@@ -114,7 +114,7 @@ async function processImageGeneration(id: number, config: AIConfig) {
       method,
       headers,
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(600_000),
+      signal: AbortSignal.timeout(120_000),
     })
 
     if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`)

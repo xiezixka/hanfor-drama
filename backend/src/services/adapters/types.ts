@@ -57,6 +57,12 @@ export interface VideoProviderAdapter {
   parsePollResponse(result: any): VideoPollResponse
 
   extractVideoUrl(result: any): string | null
+
+  /**
+   * 某些异步视频服务完成后返回的是资源 ID，而不是可公开访问 URL。
+   * 适配器可在这里提供带鉴权的下载请求。
+   */
+  buildDownloadRequest?(config: AIConfig, videoUrl: string): ProviderRequest | null
 }
 
 // ============ 通用类型 ============

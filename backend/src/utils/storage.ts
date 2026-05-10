@@ -32,6 +32,24 @@ export async function downloadFile(url: string, subDir: string): Promise<string>
   return `static/${subDir}/${filename}`
 }
 
+export async function saveBinaryFile(data: Buffer | Uint8Array, subDir: string, ext = '.bin'): Promise<string> {
+  const dir = path.join(STORAGE_ROOT, subDir)
+  fs.mkdirSync(dir, { recursive: true })
+
+  const safeExt = ext.startsWith('.') ? ext : `.${ext}`
+  const filename = `${uuid()}${safeExt || '.bin'}`
+  const filePath = path.join(dir, filename)
+
+  fs.writeFileSync(filePath, Buffer.from(data))
+  return `static/${subDir}/${filename}`
+}
+
+export async function saveDataUrlFile(dataUrl: string, subDir: string): Promise<string> {
+  const parsed = parseDataUrl(dataUrl)
+  if (!parsed) throw new Error('Invalid data URL')
+  return saveBinaryFile(Buffer.from(parsed.data, 'base64'), subDir, mimeTypeToExt(parsed.mimeType))
+}
+
 /**
  * 保存上传的文件
  */
@@ -136,6 +154,12 @@ function mimeTypeToExt(mimeType: string): string {
     'image/jpg': '.jpg',
     'image/webp': '.webp',
     'image/gif': '.gif',
+    'video/mp4': '.mp4',
+    'video/mpeg': '.mpeg',
+    'video/quicktime': '.mov',
+    'video/webm': '.webm',
+    'audio/mpeg': '.mp3',
+    'audio/wav': '.wav',
   }
   return map[mimeType] || '.png'
 }

@@ -13,7 +13,7 @@ app.post('/', async (c) => {
   if (!body.prompt) return badRequest(c, 'prompt is required')
 
   try {
-    let configId: number | undefined = body.config_id
+    let configId: number | undefined = normalizeId(body.config_id)
     if (body.storyboard_id) {
       const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, Number(body.storyboard_id))).all()
       if (sb) {
@@ -58,6 +58,14 @@ app.get('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const [row] = db.select().from(schema.imageGenerations)
     .where(eq(schema.imageGenerations.id, id)).all()
+  if (row?.status === 'processing' && !row.taskId && isStaleProcessing(row.updatedAt)) {
+    const message = '图片模型响应超时，请检查当前图片模型或稍后重试'
+    db.update(schema.imageGenerations)
+      .set({ status: 'failed', errorMsg: message, updatedAt: now() })
+      .where(eq(schema.imageGenerations.id, id))
+      .run()
+    return success(c, { ...row, status: 'failed', errorMsg: message, error_msg: message })
+  }
   return success(c, row || null)
 })
 
@@ -82,3 +90,15 @@ app.delete('/:id', async (c) => {
 })
 
 export default app
+
+function normalizeId(value: unknown): number | undefined {
+  if (value == null || value === '') return undefined
+  if (typeof value === 'object' && value && 'value' in value) return normalizeId((value as { value?: unknown }).value)
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : undefined
+}
+
+function isStaleProcessing(updatedAt?: string | null) {
+  if (!updatedAt) return false
+  return Date.now() - new Date(updatedAt).getTime() > 130_000
+}

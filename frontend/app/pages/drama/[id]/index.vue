@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="page-head">
       <div class="head-left">
-        <button class="back-btn" @click="navigateTo('/')">
+        <button class="back-btn" @click="navigateTo('/drama-projects')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
@@ -12,7 +12,7 @@
         <div class="head-info">
           <h1 class="page-title">{{ drama.title }}</h1>
           <div class="page-meta">
-            <span v-if="drama.style" class="style-chip">{{ drama.style }}</span>
+            <span v-if="drama.style" class="style-chip">{{ getVisualStyleLabel(drama.style) }}</span>
             <span v-if="drama.style" class="meta-divider"></span>
             <span class="meta-item">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -203,6 +203,7 @@
 import { toast } from 'vue-sonner'
 import { Upload } from 'lucide-vue-next'
 import { aiConfigAPI, characterAPI, dramaAPI, episodeAPI, sceneAPI, uploadAPI } from '~/composables/useApi'
+import { getVisualStyleLabel } from '~/utils/visualStyles'
 
 const route = useRoute()
 const drama = ref(null)

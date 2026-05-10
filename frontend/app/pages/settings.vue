@@ -32,12 +32,12 @@
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋Ai" class="settings-brand-logo" @error="showBrandImage = false" />
               <span v-else class="settings-brand-fallback">火</span>
             </div>
             <div class="settings-brand-copy">
-              <div class="settings-brand-kicker">Hanfor Teah</div>
-              <div class="settings-brand-name">涵锋短剧</div>
+              <div class="settings-brand-kicker">Hanfor AI</div>
+              <div class="settings-brand-name">涵锋Ai</div>
             </div>
           </div>
           <h2 class="settings-title">AI 服务配置</h2>
@@ -91,7 +91,7 @@
                 <div class="section-subtitle">{{ serviceMeta[st.type].desc }}</div>
               </div>
               <span v-if="countActive(st.type)" class="tag tag-accent">{{ countActive(st.type) }} 已启用</span>
-              <button class="btn btn-ghost btn-sm ml-auto" @click="startAddCfg(st.type)"><Plus :size="13" /> 添加</button>
+              <button class="btn btn-ghost btn-sm ml-auto" :title="`添加${st.label}服务`" :aria-label="`添加${st.label}服务`" @click="startAddCfg(st.type)"><Plus :size="13" /> 添加</button>
             </div>
             <div class="config-list">
               <div v-for="c in byType(st.type)" :key="c.id" class="card config-row">
@@ -103,13 +103,23 @@
                     </div>
                     <span class="config-model mono truncate">{{ fmtModel(c.model) }}</span>
                     <span class="config-base mono truncate">{{ c.base_url || '未设置 Base URL' }}</span>
+                    <button type="button" class="config-bindings" title="选择或取消绑定项目" aria-label="选择或取消绑定项目" @click="startEditBinding(c)">
+                      <span class="binding-label">绑定项目</span>
+                      <span
+                        v-for="project in bindingProjects(c)"
+                        :key="project.id"
+                        :class="['binding-chip', { muted: !project.bound }]"
+                      >
+                        {{ project.label }}
+                      </span>
+                    </button>
                   </div>
                 </div>
                 <span :class="['tag', c.api_key ? 'tag-success' : 'tag-error']">{{ c.api_key ? '已配置' : '无密钥' }}</span>
-                <button class="btn btn-ghost btn-sm" @click="testExistingCfg(c)">测试</button>
-                <label class="toggle"><input type="checkbox" :checked="c.is_active" @change="toggleCfg(c)"><span /></label>
-                <button class="btn btn-ghost btn-icon" @click="startEditCfg(c)"><Pencil :size="13" /></button>
-                <button class="btn btn-ghost btn-icon" @click="delCfg(c.id)"><Trash2 :size="13" /></button>
+                <button class="btn btn-ghost btn-sm" title="测试当前服务配置" aria-label="测试当前服务配置" @click="testExistingCfg(c)">测试</button>
+                <label class="toggle" title="启用或停用服务配置" aria-label="启用或停用服务配置"><input type="checkbox" :checked="c.is_active" @change="toggleCfg(c)"><span /></label>
+                <button class="btn btn-ghost btn-icon" title="编辑服务配置" aria-label="编辑服务配置" @click="startEditCfg(c)"><Pencil :size="13" /></button>
+                <button class="btn btn-ghost btn-icon" title="删除服务配置" aria-label="删除服务配置" @click="delCfg(c.id)"><Trash2 :size="13" /></button>
               </div>
               <p v-if="!byType(st.type).length" class="config-empty">暂无配置</p>
             </div>
@@ -122,12 +132,12 @@
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+              <img v-if="showBrandImage" :src="brandLogo" alt="涵锋Ai" class="settings-brand-logo" @error="showBrandImage = false" />
               <span v-else class="settings-brand-fallback">火</span>
             </div>
             <div class="settings-brand-copy">
-              <div class="settings-brand-kicker">Hanfor Teah</div>
-              <div class="settings-brand-name">涵锋短剧</div>
+              <div class="settings-brand-kicker">Hanfor AI</div>
+              <div class="settings-brand-name">涵锋Ai</div>
             </div>
           </div>
           <h2 class="settings-title">Agent 配置</h2>
@@ -201,12 +211,12 @@
           <div class="settings-head">
             <div class="settings-brand">
               <div class="settings-brand-mark">
-                <img v-if="showBrandImage" :src="brandLogo" alt="涵锋短剧" class="settings-brand-logo" @error="showBrandImage = false" />
+                <img v-if="showBrandImage" :src="brandLogo" alt="涵锋Ai" class="settings-brand-logo" @error="showBrandImage = false" />
                 <span v-else class="settings-brand-fallback">火</span>
               </div>
               <div class="settings-brand-copy">
-                <div class="settings-brand-kicker">Hanfor Teah</div>
-                <div class="settings-brand-name">涵锋短剧</div>
+                <div class="settings-brand-kicker">Hanfor AI</div>
+                <div class="settings-brand-name">涵锋Ai</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -240,7 +250,7 @@
                   <div style="font-weight:600;font-size:13px">{{ s.name }}</div>
                   <div class="dim" style="font-size:11px">{{ s.description }}</div>
                 </div>
-                <button class="btn btn-ghost btn-icon" style="margin-right:4px" @click.stop="deleteSkill(s.id)">
+                <button class="btn btn-ghost btn-icon" style="margin-right:4px" title="删除 Skill" aria-label="删除 Skill" @click.stop="deleteSkill(s.id)">
                   <Trash2 :size="13" />
                 </button>
                 <ChevronDown :size="14" :style="{ transform: editingSkill === s.id ? 'rotate(180deg)' : '', transition: '0.2s' }" />
@@ -306,10 +316,6 @@
         </label>
         <label class="field"><span class="field-label">API Key</span><input v-model="cfgForm.api_key" class="input" type="password" placeholder="sk-..." /></label>
         <label class="field"><span class="field-label">Base URL</span><input v-model="cfgForm.base_url" class="input" placeholder="https://..." /></label>
-        <div class="endpoint-hint">
-          <span class="dim">实际端点前缀：</span>
-          <span class="mono">{{ endpointHint }}</span>
-        </div>
         <label class="field"><span class="field-label">模型（逗号分隔）</span><input v-model="cfgForm.modelStr" class="input" placeholder="model-name" /></label>
         <div v-if="cfgTestResult" class="test-result" :class="{ ok: cfgTestResult.reachable, bad: !cfgTestResult.reachable }">
           <div class="test-result-head">
@@ -326,6 +332,35 @@
           </button>
           <button type="button" class="btn" @click="cfgDialog = false">取消</button>
           <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Binding Dialog -->
+    <div v-if="bindingDialog" class="overlay" @click.self="bindingDialog = false">
+      <form class="modal card binding-modal" @submit.prevent="saveBinding">
+        <div class="config-modal-head">
+          <div>
+            <h2 class="modal-title">绑定项目</h2>
+            <div class="modal-note">{{ bindingForm.name }} 可以在哪些项目入口中使用。</div>
+          </div>
+          <span class="tag tag-accent">{{ serviceMeta[bindingForm.serviceType]?.label || '服务' }}</span>
+        </div>
+        <div class="binding-options">
+          <label
+            v-for="project in bindingOptionsFor(bindingForm.serviceType)"
+            :key="project.id"
+            class="binding-option"
+          >
+            <input v-model="bindingForm.projects" type="checkbox" :value="project.id" />
+            <span class="binding-check"><Check :size="12" /></span>
+            <span>{{ project.label }}</span>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" @click="clearBinding">取消全部绑定</button>
+          <button type="button" class="btn" @click="bindingDialog = false">关闭</button>
+          <button type="submit" class="btn btn-primary">保存绑定</button>
         </div>
       </form>
     </div>
@@ -419,9 +454,11 @@ const presetDialog = ref(false)
 const cfgTesting = ref(false)
 const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
+const bindingDialog = ref(false)
+const bindingForm = reactive({ id: null, name: '', serviceType: 'text', projects: [] })
 const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '文本' }, { type: 'image', label: '图片' }, { type: 'video', label: '视频' }, { type: 'audio', label: '音频' }]
-const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'modelmesh', 'openai', 'openrouter', 'vidu', 'volcengine', 'xiaomi']
+const providers = ['ali', 'antsk', 'chatfire', 'gemini', 'minimax', 'modelmesh', 'openai', 'openrouter', 'sora', 'veo', 'vidu', 'volcengine', 'xiaomi']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
 const serviceMeta = {
   text: { label: '文本', desc: '剧本改写、角色场景提取、分镜拆解等 Agent 文本能力' },
@@ -431,55 +468,104 @@ const serviceMeta = {
 }
 const providerPresets = {
   text: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
-    openrouter: { label: 'OpenRouter 推荐', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
-    openai: { label: 'OpenAI 推荐', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
+    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site/v1', models: ['gemini-3-pro-preview'] },
+    openrouter: { label: 'OpenRouter 推荐', baseUrl: 'https://openrouter.ai/api/v1', models: ['google/gemini-3-flash-preview'] },
+    openai: { label: 'OpenAI 推荐', baseUrl: 'https://api.openai.com/v1', models: ['gpt-4.1-mini'] },
   },
   image: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
-    gemini: { label: 'Gemini 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-image-preview'] },
-    volcengine: { label: '火山推荐', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
+    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site/v1', models: ['doubao-seedream-4-5-251128'] },
+    gemini: { label: 'Gemini 推荐', baseUrl: 'https://api.chatfire.site/v1beta', models: ['gemini-3-pro-image-preview'] },
+    volcengine: { label: '火山推荐', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', models: ['doubao-seedream-4-0-250828'] },
+    xiaomi: { label: '小米推荐', baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1', models: ['MiMo-V2.5'] },
   },
   video: {
-    volcengine: { label: '火宝视频', baseUrl: 'https://api.chatfire.site/volcengine', models: ['doubao-seedance-1-5-pro-251215'] },
-    vidu: { label: 'Vidu 推荐', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
-    ali: { label: '阿里推荐', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
+    openai: { label: 'Sora 视频', baseUrl: 'https://api.openai.com/v1', models: ['sora-2'] },
+    sora: { label: 'Sora 兼容', baseUrl: 'https://api.openai.com/v1', models: ['sora-2'] },
+    veo: { label: 'Veo 自动', baseUrl: 'http://api.gitcc.com/v1', models: ['veo'] },
+    antsk: { label: 'BigBanana Vidu', baseUrl: 'https://api.antsk.cn/v1', models: ['viduq3-turbo'] },
+    volcengine: { label: '火宝视频', baseUrl: 'https://api.chatfire.site/volcengine/api/v3', models: ['doubao-seedance-1-5-pro-251215'] },
+    vidu: { label: 'Vidu 首尾帧', baseUrl: 'https://api.vidu.cn', models: ['viduq3-turbo'] },
+    ali: { label: '阿里推荐', baseUrl: 'https://dashscope.aliyuncs.com/api/v1', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
-    minimax: { label: '火宝音频', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
+    minimax: { label: '火宝音频', baseUrl: 'https://api.chatfire.site/minimax/v1', models: ['speech-2.8-hd'] },
     xiaomi: { label: '小米语音', baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1', models: ['mimo-v2.5-tts'] },
   },
 }
 const huobaoPresetCards = [
-  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
-  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
+  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site/v1', model: 'gemini-3-pro-preview', priority: 100 },
+  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site/v1beta', model: 'gemini-3-pro-image-preview', priority: 99 },
+  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine/api/v3', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
+  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax/v1', model: 'speech-2.8-hd', priority: 97 },
 ]
-const endpointPrefixes = {
-  chatfire: '/v1',
-  openai: '/v1',
-  openrouter: '/v1',
-  minimax: '/v1',
-  gemini: '/v1beta',
-  volcengine: '/api/v3',
-  ali: '/api/v1',
-  vidu: '/ent/v2',
-  xiaomi: '/v1',
+const configProjectBindings = {
+  text: ['drama'],
+  image: ['drama', 'image'],
+  video: ['drama'],
+  audio: ['drama', 'voice'],
 }
-
-const endpointHint = computed(() => {
-  const provider = cfgForm.provider
-  const base = cfgForm.base_url || 'https://...'
-  const prefix = endpointPrefixes[provider] || ''
-  if (!provider) return '选择服务商后显示推荐端点前缀'
-  const normalizedBase = base.replace(/\/+$/, '')
-  return prefix && normalizedBase.endsWith(prefix) ? normalizedBase : `${normalizedBase}${prefix}`
-})
+const projectBindingOptions = {
+  drama: { id: 'drama', label: '短剧项目' },
+  image: { id: 'image', label: '图片项目' },
+  voice: { id: 'voice', label: '语音项目' },
+}
 
 function byType(t) { return cfgs.value.filter(c => c.service_type === t) }
 function countActive(t) { return byType(t).filter(c => c.is_active).length }
 function fmtModel(m) { return Array.isArray(m) ? m.join(', ') : m || '—' }
+function isConfigActive(c) { return Boolean(c.is_active ?? c.isActive) }
+function normalizeBindingId(project) {
+  const aliases = {
+    短剧项目: 'drama',
+    图片项目: 'image',
+    语音项目: 'voice',
+  }
+  return aliases[project] || project
+}
+function explicitBoundProjects(c) {
+  if (Array.isArray(c.bound_projects)) return c.bound_projects.map(normalizeBindingId).filter(Boolean)
+  if (Array.isArray(c.boundProjects)) return c.boundProjects.map(normalizeBindingId).filter(Boolean)
+  const settings = typeof c.settings === 'string' ? (() => {
+    try { return JSON.parse(c.settings) } catch { return {} }
+  })() : (c.settings || {})
+  return Array.isArray(settings.bound_projects) ? settings.bound_projects.map(normalizeBindingId).filter(Boolean) : null
+}
+function bindingIds(c) {
+  const explicit = explicitBoundProjects(c)
+  if (explicit) return explicit
+  if (!isConfigActive(c)) return []
+  return configProjectBindings[c.service_type] || []
+}
+function bindingProjects(c) {
+  const ids = bindingIds(c)
+  if (!ids.length) return [{ id: 'none', label: '未绑定项目', bound: false }]
+  return ids.map(id => projectBindingOptions[id] || { id, label: id, bound: true }).map(item => ({ ...item, bound: true }))
+}
+function bindingOptionsFor(serviceType) {
+  return (configProjectBindings[serviceType] || []).map(id => projectBindingOptions[id]).filter(Boolean)
+}
+function startEditBinding(c) {
+  bindingForm.id = c.id
+  bindingForm.name = c.name || `${c.provider}-${c.service_type}`
+  bindingForm.serviceType = c.service_type
+  bindingForm.projects = [...bindingIds(c)]
+  bindingDialog.value = true
+}
+function clearBinding() {
+  bindingForm.projects = []
+}
+async function saveBinding() {
+  try {
+    const allowed = new Set(bindingOptionsFor(bindingForm.serviceType).map(p => p.id))
+    const projects = bindingForm.projects.filter(project => allowed.has(project))
+    await aiConfigAPI.update(bindingForm.id, { bound_projects: projects })
+    bindingDialog.value = false
+    toast.success(projects.length ? '绑定项目已保存' : '已取消全部绑定')
+    await loadCfgs()
+  } catch (e) {
+    toast.error(e.message)
+  }
+}
 function presetsByType(type) {
   const group = providerPresets[type] || {}
   return Object.entries(group).map(([provider, preset]) => ({ provider, ...preset }))
@@ -1030,6 +1116,94 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
 .config-name { font-size: 12px; color: var(--text-2); }
 .config-model { font-size: 11px; color: var(--text-2); }
 .config-base { font-size: 11px; color: var(--text-3); }
+.config-bindings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.config-bindings:hover .binding-label {
+  color: var(--accent-text);
+}
+.config-bindings:hover .binding-chip {
+  box-shadow: inset 0 0 0 1px rgba(69, 112, 232, 0.2);
+}
+.binding-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+.binding-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.binding-chip.muted {
+  background: var(--bg-2);
+  color: var(--text-3);
+}
+.binding-modal { width: min(460px, calc(100vw - 40px)); }
+.binding-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.binding-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.72);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.binding-option:hover {
+  border-color: rgba(69, 112, 232, 0.35);
+  background: var(--accent-bg);
+}
+.binding-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.binding-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  background: var(--bg-0);
+}
+.binding-option input:checked + .binding-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
 .config-empty { font-size: 12px; color: var(--text-3); padding: 12px 0; }
 
 .toggle { position: relative; width: 30px; height: 17px; cursor: pointer; flex-shrink: 0; }
@@ -1126,14 +1300,6 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
   border-color: var(--accent);
   background: var(--accent-bg);
   color: var(--accent-text);
-}
-.endpoint-hint {
-  margin-top: -4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-  background: rgba(244,248,255,0.72);
-  font-size: 12px;
 }
 .test-result {
   display: flex;

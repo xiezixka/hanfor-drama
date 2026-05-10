@@ -12,6 +12,8 @@ import scenes from './routes/scenes.js'
 import characters from './routes/characters.js'
 import images from './routes/images.js'
 import videos from './routes/videos.js'
+import audio from './routes/audio.js'
+import assets from './routes/assets.js'
 import upload from './routes/upload.js'
 import aiConfigs, { aiProviders } from './routes/aiConfigs.js'
 import agentConfigs from './routes/agentConfigs.js'
@@ -51,6 +53,8 @@ api.route('/scenes', scenes)
 api.route('/characters', characters)
 api.route('/images', images)
 api.route('/videos', videos)
+api.route('/audio', audio)
+api.route('/assets', assets)
 api.route('/upload', upload)
 api.route('/ai-configs', aiConfigs)
 api.route('/ai-providers', aiProviders)

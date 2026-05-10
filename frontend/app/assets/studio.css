@@ -84,6 +84,58 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-base: #0f1724;
+  --bg-0:   #151f2f;
+  --bg-1:   #111a28;
+  --bg-2:   #1b283b;
+  --bg-3:   #2b3c55;
+  --bg-hover: #1d2b40;
+  --bg-active: #24354d;
+  --bg-input: #101927;
+  --bg-surface: rgba(17, 26, 40, 0.94);
+
+  --border:        #26374e;
+  --border-strong: #3b4f6d;
+  --border-focus:  #7aa7ff;
+
+  --text-0: #eef4ff;
+  --text-1: #d7e3f4;
+  --text-2: #9eb0c8;
+  --text-3: #71849f;
+
+  --accent:        #7aa7ff;
+  --accent-dark:   #5f8ded;
+  --accent-bg:     rgba(122, 167, 255, 0.14);
+  --accent-text:   #a9c5ff;
+  --accent-glow:   rgba(122, 167, 255, 0.2);
+  --accent-gradient: linear-gradient(135deg, #98bcff 0%, #6d99fb 48%, #4d73d8 100%);
+
+  --panel-bg: rgba(17, 26, 40, 0.92);
+  --panel-border: rgba(145, 165, 198, 0.14);
+  --shadow-panel: 0 18px 48px rgba(0, 0, 0, 0.34), 0 4px 14px rgba(0, 0, 0, 0.22);
+
+  --success:   #77d2a4;
+  --success-bg: rgba(119, 210, 164, 0.13);
+  --error:     #ff8c9c;
+  --error-bg:  rgba(255, 140, 156, 0.13);
+  --info:      #91b7ff;
+  --info-bg:   rgba(145, 183, 255, 0.13);
+  --warning:   #e8c16d;
+  --warning-bg: rgba(232, 193, 109, 0.13);
+
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-sm:  0 3px 10px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
+  --shadow:     0 8px 20px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-lg:  0 14px 30px rgba(0, 0, 0, 0.34), 0 4px 12px rgba(0, 0, 0, 0.24);
+  --shadow-xl:  0 20px 44px rgba(0, 0, 0, 0.38), 0 8px 16px rgba(0, 0, 0, 0.26);
+  --shadow-card: 0 8px 22px rgba(0, 0, 0, 0.24);
+  --shadow-elevated: 0 18px 42px rgba(0, 0, 0, 0.36), 0 6px 16px rgba(0, 0, 0, 0.26);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
 html, body, #__nuxt { height: 100%; }
 
 body {
@@ -100,6 +152,13 @@ body {
   overflow: hidden;
   font-weight: 400;
   letter-spacing: 0.01em;
+}
+
+html[data-theme='dark'] body {
+  background:
+    radial-gradient(circle at top left, rgba(122, 167, 255, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(76, 125, 255, 0.08), transparent 22%),
+    linear-gradient(180deg, #101827 0%, #0b1220 100%);
 }
 
 /* === Typography === */

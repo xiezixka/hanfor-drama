@@ -18,26 +18,30 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
 
   buildGenerateRequest(config: AIConfig, record: VideoGenerationRecord): ProviderRequest {
     const model = record.model || config.model || 'doubao-seedance-1-5-pro-251215'
+    const useSeedance2References = /doubao-seedance-2-0|bigbanana-2/i.test(model)
 
     const content: any[] = [{ type: 'text', text: record.prompt || '' }]
 
-    // 添加参考图
-    if (record.referenceMode === 'single' && record.imageUrl) {
-      content.push({ type: 'image_url', image_url: { url: record.imageUrl } })
-    } else if (record.referenceMode === 'first_last') {
-      if (record.firstFrameUrl) {
-        content.push({ type: 'image_url', image_url: { url: record.firstFrameUrl }, role: 'first_frame' })
+    if (useSeedance2References) {
+      for (const url of collectAllReferences(record).slice(0, 4)) {
+        content.push({ type: 'image_url', image_url: { url }, role: 'reference_image' })
       }
-      if (record.lastFrameUrl) {
-        content.push({ type: 'image_url', image_url: { url: record.lastFrameUrl }, role: 'last_frame' })
-      }
-    } else if (record.referenceMode === 'multiple' && record.referenceImageUrls) {
-      try {
-        const refs = JSON.parse(record.referenceImageUrls)
-        for (const url of refs) {
+    } else {
+      // 添加参考图
+      if (record.referenceMode === 'single' && record.imageUrl) {
+        content.push({ type: 'image_url', image_url: { url: record.imageUrl } })
+      } else if (record.referenceMode === 'first_last') {
+        if (record.firstFrameUrl) {
+          content.push({ type: 'image_url', image_url: { url: record.firstFrameUrl }, role: 'first_frame' })
+        }
+        if (record.lastFrameUrl) {
+          content.push({ type: 'image_url', image_url: { url: record.lastFrameUrl }, role: 'last_frame' })
+        }
+      } else if (record.referenceMode === 'multiple' && record.referenceImageUrls) {
+        for (const url of parseReferenceImages(record.referenceImageUrls)) {
           content.push({ type: 'image_url', image_url: { url } })
         }
-      } catch {}
+      }
     }
 
     const body: any = {
@@ -45,7 +49,7 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
       content,
       generate_audio: true,
       ratio: record.aspectRatio || 'adaptive',
-      duration: this.normalizeDuration(record.duration),
+      duration: this.normalizeDuration(record.duration, useSeedance2References),
       watermark: false,
     }
 
@@ -102,9 +106,37 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
     return result.video_url || result.content?.video_url || result.data?.video_url || null
   }
 
-  private normalizeDuration(duration?: number | null): number {
+  private normalizeDuration(duration?: number | null, preferSeedance2Steps = false): number {
     const parsed = Math.round(Number(duration || 5))
     if (!Number.isFinite(parsed)) return 5
+    if (preferSeedance2Steps) {
+      return [5, 10, 15].reduce((best, value) => (
+        Math.abs(value - parsed) < Math.abs(best - parsed) ? value : best
+      ), 5)
+    }
     return Math.min(12, Math.max(4, parsed))
+  }
+}
+
+function collectAllReferences(record: VideoGenerationRecord): string[] {
+  const refs: string[] = []
+  const add = (value?: string | null) => {
+    const url = String(value || '').trim()
+    if (url && !refs.includes(url)) refs.push(url)
+  }
+  add(record.imageUrl)
+  add(record.firstFrameUrl)
+  add(record.lastFrameUrl)
+  parseReferenceImages(record.referenceImageUrls).forEach(add)
+  return refs
+}
+
+function parseReferenceImages(raw?: string | null): string[] {
+  if (!raw) return []
+  try {
+    const refs = JSON.parse(raw)
+    return Array.isArray(refs) ? refs.map((url) => String(url || '').trim()).filter(Boolean) : []
+  } catch {
+    return []
   }
 }

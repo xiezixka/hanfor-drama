@@ -10,17 +10,10 @@ export function joinProviderUrl(baseUrl: string, requiredPrefix: string, path: s
   try {
     const url = new URL(normalizedBase)
     const currentPath = url.pathname.replace(/\/+$/, '')
-    const mergedPrefix = currentPath.endsWith(normalizedPrefix)
-      ? currentPath
-      : `${currentPath}${normalizedPrefix}`
-
-    url.pathname = `${mergedPrefix}${normalizedPath}`.replace(/\/{2,}/g, '/')
+    url.pathname = `${currentPath}${normalizedPath}`.replace(/\/{2,}/g, '/')
     return url.toString()
   } catch {
-    const basePath = normalizedBase.endsWith(normalizedPrefix)
-      ? normalizedBase
-      : `${normalizedBase}${normalizedPrefix}`
-    return `${basePath}${normalizedPath}`
+    return `${normalizedBase}${normalizedPath}`
   }
 }
 

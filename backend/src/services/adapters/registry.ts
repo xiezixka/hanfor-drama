@@ -6,12 +6,15 @@ import { MiniMaxImageAdapter } from './minimax-image.js'
 import { MiniMaxVideoAdapter } from './minimax-video.js'
 import { MiniMaxTTSAdapter } from './minimax-tts.js'
 import { XiaomiTTSAdapter } from './xiaomi-tts.js'
+import { XiaomiImageAdapter } from './xiaomi-image.js'
 import { OpenAIImageAdapter } from './openai-image.js'
 import { GeminiImageAdapter } from './gemini-image.js'
 import { VolcEngineImageAdapter } from './volcengine-image.js'
 import { VolcEngineVideoAdapter } from './volcengine-video.js'
 import { ModelMeshVideoAdapter } from './modelmesh-video.js'
 import { ViduVideoAdapter } from './vidu-video.js'
+import { OpenAIVideoAdapter } from './openai-video.js'
+import { VeoVideoAdapter } from './veo-video.js'
 import { AliImageAdapter } from './ali-image.js'
 import { AliVideoAdapter } from './ali-video.js'
 import type { ImageProviderAdapter, VideoProviderAdapter, TTSProviderAdapter } from './types.js'
@@ -23,12 +26,17 @@ export const imageAdapters: Record<string, ImageProviderAdapter> = {
   gemini: new GeminiImageAdapter(),
   volcengine: new VolcEngineImageAdapter(),
   ali: new AliImageAdapter(),
+  xiaomi: new XiaomiImageAdapter(),
   // Chatfire - 待确认 API 格式，暂用 OpenAI
   chatfire: new OpenAIImageAdapter(),
 }
 
 // 视频 Adapter 注册表
 export const videoAdapters: Record<string, VideoProviderAdapter> = {
+  openai: new OpenAIVideoAdapter(),
+  sora: new OpenAIVideoAdapter(),
+  antsk: new OpenAIVideoAdapter(),
+  veo: new VeoVideoAdapter(),
   minimax: new MiniMaxVideoAdapter(),
   volcengine: new VolcEngineVideoAdapter(),
   modelmesh: new ModelMeshVideoAdapter(),

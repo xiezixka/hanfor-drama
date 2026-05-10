@@ -18,4 +18,18 @@ app.post('/image', async (c) => {
   return success(c, { url: `/${path}`, path })
 })
 
+// POST /upload/audio
+app.post('/audio', async (c) => {
+  const body = await c.req.parseBody()
+  const file = body['file']
+
+  if (!file || !(file instanceof File)) {
+    return badRequest(c, 'file is required')
+  }
+
+  const buffer = await file.arrayBuffer()
+  const path = await saveUploadedFile(buffer, 'uploads', file.name)
+  return success(c, { url: `/${path}`, path })
+})
+
 export default app

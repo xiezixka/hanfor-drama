@@ -82,10 +82,21 @@ export const uploadAPI = {
     }
     return json.data ?? json
   },
+  audio: async (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    const resp = await fetch(`${BASE}/upload/audio`, { method: 'POST', body })
+    const json = await resp.json()
+    if (!resp.ok || (json.code && json.code >= 400)) {
+      throw new Error(json.message || `${resp.status}`)
+    }
+    return json.data ?? json
+  },
 }
 
 export const imageAPI = {
   generate: (d: any) => api.post('/images', d),
+  get: (id: number) => api.get(`/images/${id}`),
   list: (params?: { drama_id?: number; storyboard_id?: number }) => {
     const query = new URLSearchParams()
     if (params?.drama_id) query.set('drama_id', String(params.drama_id))
@@ -102,6 +113,21 @@ export const gridAPI = {
 export const videoAPI = {
   generate: (d: any) => api.post('/videos', d),
   get: (id: number) => api.get(`/videos/${id}`),
+}
+export const audioAPI = {
+  tts: (d: any) => api.post('/audio/tts', d),
+}
+export const assetsAPI = {
+  list: (params?: { type?: 'image' | 'audio' | 'video'; search?: string; sort?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.type) query.set('type', params.type)
+    if (params?.search) query.set('search', params.search)
+    if (params?.sort) query.set('sort', params.sort)
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.limit) query.set('limit', String(params.limit))
+    return api.get(`/assets${query.size ? `?${query.toString()}` : ''}`)
+  },
+  del: (id: string) => api.del(`/assets/${encodeURIComponent(id)}`),
 }
 export const composeAPI = {
   shot: (id: number) => api.post(`/compose/storyboards/${id}/compose`),

@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: '涵锋短剧',
+      title: '涵锋Ai',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' },
